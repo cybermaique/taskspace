@@ -68,7 +68,6 @@ interface WorkspaceData {
   notes: Note[];
   profile: Profile;
   email: string | null;
-  isOwner: boolean;
 }
 
 interface WorkspaceUI {
@@ -157,7 +156,6 @@ export function WorkspaceProvider({
   initialView,
   initialTaskId,
   email,
-  isOwner,
   children,
 }: {
   initialTasks: Task[];
@@ -166,7 +164,6 @@ export function WorkspaceProvider({
   initialView: WorkspaceView;
   initialTaskId: string | null;
   email: string | null;
-  isOwner: boolean;
   children: ReactNode;
 }) {
   const toast = useToast();
@@ -588,9 +585,8 @@ export function WorkspaceProvider({
       notes,
       profile,
       email,
-      isOwner,
     }),
-    [email, isOwner, notes, profile, tasks],
+    [email, notes, profile, tasks],
   );
 
   const ui = useMemo<WorkspaceUI>(

@@ -19,7 +19,6 @@ import {
 import { AttachmentGrid, AttachmentViewer, FileDropZone, sortAttachments } from "@/components/attachments";
 import { RichText } from "@/components/rich-text";
 import { SmartTextarea } from "@/components/smart-textarea";
-import { DateDetailsFields, DateDetailsSummary } from "@/components/tasks/date-details";
 import { DescriptionHistoryDialog, TaskActivity } from "@/components/tasks/task-activity";
 import { TaskSubtasks } from "@/components/tasks/task-subtasks";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,6 @@ import {
   TASK_CATEGORY_OPTIONS,
   TASK_PRIORITIES,
   TASK_STATUSES,
-  type DateDetailsInput,
   type Task,
   type TaskAttachment,
 } from "@/types/task";
@@ -165,7 +163,6 @@ function DescriptionEditor({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const actions = useWorkspaceActions();
-  const { isOwner } = useWorkspace();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.description ?? "");
   const [saving, setSaving] = useState(false);
@@ -193,7 +190,7 @@ function DescriptionEditor({
       title="Descrição"
       action={
         <div className="flex items-center gap-1">
-          {isOwner && task.description_history.length ? (
+          {task.description_history.length ? (
             <Tooltip content="Histórico da descrição">
               <Button variant="ghost" size="icon-xs" onClick={() => setHistoryOpen(true)} aria-label="Histórico da descrição">
                 <History />
@@ -248,67 +245,6 @@ function DescriptionEditor({
         </button>
       )}
       <DescriptionHistoryDialog task={task} open={historyOpen} onOpenChange={setHistoryOpen} />
-    </Section>
-  );
-}
-
-function withoutTaskId(details: Task["date_details"]): DateDetailsInput {
-  if (!details) return {};
-  const copy: Partial<NonNullable<Task["date_details"]>> = { ...details };
-  delete copy.task_id;
-  return copy;
-}
-
-function DateDetailsSection({ task }: { task: Task }) {
-  const actions = useWorkspaceActions();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<DateDetailsInput>({});
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    const ok = await actions.updateTask(task.id, { date_details: draft });
-    setSaving(false);
-    if (ok) setEditing(false);
-  };
-
-  return (
-    <Section
-      title="Dados do date"
-      action={
-        !editing ? (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => {
-              setDraft(withoutTaskId(task.date_details));
-              setEditing(true);
-            }}
-          >
-            <Pencil />
-            Editar
-          </Button>
-        ) : null
-      }
-    >
-      {editing ? (
-        <div className="space-y-4">
-          <DateDetailsFields value={draft} onChange={setDraft} />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
-              Cancelar
-            </Button>
-            <Button size="sm" onClick={() => void save()} disabled={saving}>
-              {saving ? <LoaderCircle className="animate-spin" /> : null}
-              Salvar
-            </Button>
-          </div>
-        </div>
-      ) : task.date_details ? (
-        <DateDetailsSummary details={task.date_details} />
-      ) : (
-        <p className="text-sm text-muted-foreground">Nenhum dado preenchido.</p>
-      )}
     </Section>
   );
 }
@@ -490,7 +426,6 @@ function TaskSheetBody({
         </div>
 
         <div className="mt-2">
-          {task.type === "date" ? <DateDetailsSection task={task} /> : null}
           <DescriptionEditor task={task} onDirtyChange={onDirtyChange} />
           <Section title="Subtarefas">
             <TaskSubtasks task={task} />

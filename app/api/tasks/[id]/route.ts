@@ -19,7 +19,6 @@ export const PATCH = withAuth(
       priority: isTaskPriority(body.priority) ? body.priority : undefined,
       type: isTaskType(body.type) ? body.type : undefined,
       category: nullableString(body.category),
-      date_details: body.date_details as never,
     });
 
     return NextResponse.json({ task });

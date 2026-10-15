@@ -1,14 +1,11 @@
 import "server-only";
 
-import { isOwnerEmail } from "@/lib/owner";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   isTaskPriority,
   isTaskStatus,
-  isTaskType,
+  normalizeTaskType,
   type CreateTaskInput,
-  type DateDetails,
-  type DateDetailsInput,
   type Subtask,
   type Task,
   type TaskAttachment,
@@ -26,30 +23,16 @@ const TASK_COLUMNS = `
   subtasks(id,task_id,title,is_completed,completed_at,position,created_at,updated_at),
   task_status_history(id,task_id,from_status,to_status,changed_at),
   task_description_history(id,task_id,description,changed_at),
-  task_date_details(
-    task_id,age,sign,address,height,work,met_via,has_children,location,date_at,
-    personality_rating,face_rating,body_rating,sex_rating
-  ),
   task_comments(id,task_id,content,created_at)
 `;
 
 const SUBTASK_COLUMNS =
   "id,task_id,title,is_completed,completed_at,position,created_at,updated_at";
 
-const DATE_DETAIL_TEXT_KEYS = ["sign", "address", "height", "work", "met_via", "location", "date_at"] as const;
-const DATE_DETAIL_NUMBER_KEYS = [
-  "age",
-  "personality_rating",
-  "face_rating",
-  "body_rating",
-  "sex_rating",
-] as const;
-
 type RawTask = Task & {
   task_attachments?: TaskAttachment[];
   task_status_history?: TaskStatusHistory[];
   task_description_history?: TaskDescriptionHistory[];
-  task_date_details?: DateDetails | DateDetails[] | null;
   task_comments?: TaskComment[];
 };
 
@@ -63,13 +46,13 @@ function mapTask(raw: RawTask): Task {
     task_attachments,
     task_status_history,
     task_description_history,
-    task_date_details,
     task_comments,
     ...task
   } = raw;
 
   return {
     ...task,
+    type: normalizeTaskType(task.type),
     attachments: task_attachments ?? [],
     subtasks: [...(task.subtasks ?? [])].sort(
       (left, right) =>
@@ -80,9 +63,6 @@ function mapTask(raw: RawTask): Task {
     description_history: [...(task_description_history ?? [])]
       .sort(byTimeAsc("changed_at"))
       .reverse(),
-    date_details: Array.isArray(task_date_details)
-      ? (task_date_details[0] ?? null)
-      : (task_date_details ?? null),
     comments: [...(task_comments ?? [])].sort(byTimeAsc("created_at")),
   };
 }
@@ -90,30 +70,6 @@ function mapTask(raw: RawTask): Task {
 function normalizeNullableText(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
-}
-
-/** Keeps only known date-detail columns so callers cannot write other fields. */
-export function sanitizeDateDetails(value: unknown): DateDetailsInput | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  const input = value as Record<string, unknown>;
-  const details: Record<string, string | number | boolean | null> = {};
-
-  for (const key of DATE_DETAIL_TEXT_KEYS) {
-    if (key in input) {
-      details[key] = typeof input[key] === "string" ? normalizeNullableText(input[key] as string) : null;
-    }
-  }
-  for (const key of DATE_DETAIL_NUMBER_KEYS) {
-    if (key in input) {
-      const number = Number(input[key]);
-      details[key] = input[key] === null || input[key] === "" || !Number.isFinite(number) ? null : number;
-    }
-  }
-  if ("has_children" in input) {
-    details.has_children = typeof input.has_children === "boolean" ? input.has_children : null;
-  }
-
-  return details as DateDetailsInput;
 }
 
 function getAttachmentMimeType(file: File) {
@@ -182,7 +138,7 @@ export async function createTask(input: CreateTaskInput) {
       description: normalizeNullableText(input.description),
       status,
       priority: isTaskPriority(input.priority) ? input.priority : "medium",
-      type: isTaskType(input.type) ? input.type : "feature",
+      type: input.type ? normalizeTaskType(input.type) : "feature",
       category: normalizeNullableText(input.category),
       position: (firstTask?.position ?? 1) - 1,
       completed_at: status === "completed" ? new Date().toISOString() : null,
@@ -192,14 +148,6 @@ export async function createTask(input: CreateTaskInput) {
 
   if (error) throw new Error(error.message);
   const taskId = (data as { id: string }).id;
-
-  const dateDetails = sanitizeDateDetails(input.date_details);
-  if (dateDetails && Object.keys(dateDetails).length) {
-    const { error: detailsError } = await supabase
-      .from("task_date_details")
-      .upsert({ ...dateDetails, task_id: taskId });
-    if (detailsError) throw new Error(detailsError.message);
-  }
 
   const subtaskTitles = (input.subtasks ?? [])
     .map((title) => title.trim())
@@ -237,17 +185,9 @@ export async function updateTask(id: string, input: UpdateTaskInput) {
       input.status === "completed" ? new Date().toISOString() : null;
   }
   if (isTaskPriority(input.priority)) updatePayload.priority = input.priority;
-  if (isTaskType(input.type)) updatePayload.type = input.type;
+  if (input.type !== undefined) updatePayload.type = normalizeTaskType(input.type);
   if (input.category !== undefined) {
     updatePayload.category = normalizeNullableText(input.category);
-  }
-
-  const dateDetails = sanitizeDateDetails(input.date_details);
-  if (dateDetails) {
-    const { error: detailsError } = await supabase
-      .from("task_date_details")
-      .upsert({ ...dateDetails, task_id: id });
-    if (detailsError) throw new Error(detailsError.message);
   }
 
   if (Object.keys(updatePayload).length) {
@@ -260,11 +200,6 @@ export async function updateTask(id: string, input: UpdateTaskInput) {
 
 export async function restoreTaskDescription(taskId: string, historyId: string) {
   const supabase = await createSupabaseServerClient();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !isOwnerEmail(userData.user?.email)) {
-    throw new Error("Apenas o proprietário pode restaurar descrições.");
-  }
-
   const { data: revision, error: revisionError } = await supabase
     .from("task_description_history")
     .select("description")

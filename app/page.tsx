@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Workspace } from "@/components/workspace/workspace";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth";
 import { listNotes } from "@/lib/notes";
-import { isOwnerEmail } from "@/lib/owner";
 import { listTasks } from "@/lib/tasks";
 
 export default async function HomePage({
@@ -33,7 +32,6 @@ export default async function HomePage({
       initialView={view === "notes" ? "notes" : "tasks"}
       initialTaskId={typeof task === "string" ? task : null}
       email={user.email ?? null}
-      isOwner={isOwnerEmail(user.email)}
     />
   );
 }

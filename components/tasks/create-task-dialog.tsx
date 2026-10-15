@@ -5,7 +5,6 @@ import { FolderClosed, LoaderCircle, Paperclip, Plus, X } from "lucide-react";
 
 import { FileDropZone } from "@/components/attachments";
 import { SmartTextarea } from "@/components/smart-textarea";
-import { DateDetailsFields } from "@/components/tasks/date-details";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -22,7 +21,6 @@ import {
   TASK_CATEGORY_OPTIONS,
   TASK_PRIORITIES,
   TASK_STATUSES,
-  type DateDetailsInput,
   type TaskPriority,
   type TaskStatus,
   type TaskType,
@@ -70,7 +68,6 @@ interface Draft {
   type: TaskType;
   subtasks: string[];
   files: File[];
-  dateDetails: DateDetailsInput;
 }
 
 const emptyDraft = (status: TaskStatus): Draft => ({
@@ -82,7 +79,6 @@ const emptyDraft = (status: TaskStatus): Draft => ({
   type: "feature",
   subtasks: [],
   files: [],
-  dateDetails: {},
 });
 
 function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
@@ -130,7 +126,6 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
           category: draft.category,
           type: draft.type,
           subtasks: pendingSubtask ? [...draft.subtasks, pendingSubtask] : draft.subtasks,
-          date_details: draft.type === "date" ? draft.dateDetails : undefined,
         },
         draft.files,
       );
@@ -232,13 +227,6 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
             options={typeOptions}
           />
         </div>
-
-        {draft.type === "date" ? (
-          <div className="rounded-xl border bg-subtle p-3">
-            <p className="mb-3 text-xs font-semibold">Dados do date</p>
-            <DateDetailsFields value={draft.dateDetails} onChange={(dateDetails) => update({ dateDetails })} />
-          </div>
-        ) : null}
 
         <div className="rounded-xl border bg-subtle/60 p-2">
           {draft.subtasks.length ? (

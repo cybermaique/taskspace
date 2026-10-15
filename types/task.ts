@@ -9,7 +9,6 @@ export const TASK_TYPES = [
   "feature",
   "bug",
   "improvement",
-  "date",
   "study",
   "travel",
   "health",
@@ -33,6 +32,11 @@ export function isTaskType(value: unknown): value is TaskType {
   return TASK_TYPES.includes(value as TaskType);
 }
 
+/** Rows may hold types retired from the app (e.g. "date"); show them as personal. */
+export function normalizeTaskType(value: unknown): TaskType {
+  return isTaskType(value) ? value : "personal";
+}
+
 export const WORK_TASK_TYPE_OPTIONS = [
   { value: "feature", label: "Feature" },
   { value: "bug", label: "Bug" },
@@ -40,7 +44,6 @@ export const WORK_TASK_TYPE_OPTIONS = [
 ] as const satisfies ReadonlyArray<{ value: TaskType; label: string }>;
 
 export const PERSONAL_TASK_TYPE_OPTIONS = [
-  { value: "date", label: "Date" },
   { value: "study", label: "Estudos" },
   { value: "travel", label: "Viagem" },
   { value: "health", label: "Saúde" },
@@ -57,41 +60,6 @@ export const TASK_CATEGORY_OPTIONS = [
   { value: "trabalho", label: "Trabalho" },
   { value: "pessoal", label: "Pessoal" },
 ] as const;
-
-export const DATE_MEETING_SOURCE_OPTIONS = [
-  { value: "instagram", label: "Instagram" },
-  { value: "facebook", label: "Facebook" },
-  { value: "tinder", label: "Tinder" },
-  { value: "happn", label: "Happn" },
-  { value: "bumble", label: "Bumble" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "amigos", label: "Amigos ou conhecidos" },
-  { value: "trabalho", label: "Trabalho" },
-  { value: "estudos", label: "Estudos" },
-  { value: "evento", label: "Evento ou festa" },
-  { value: "academia", label: "Academia" },
-  { value: "outro", label: "Outro" },
-] as const;
-
-export type DateMeetingSource = (typeof DATE_MEETING_SOURCE_OPTIONS)[number]["value"];
-
-export function getDateMeetingSourceLabel(value: string | null | undefined) {
-  if (!value) return null;
-  return DATE_MEETING_SOURCE_OPTIONS.find((option) => option.value === value)?.label ?? value;
-}
-
-export const DATE_DESCRIPTION_TEMPLATE = `Idade:
-Signo:
-Endereço:
-Altura:
-Tem filho:
-Data date:
-
-Nota personalidade:
-Nota rosto:
-Nota corpo:
-Nota sexo:
-`;
 
 export function isPersonalCategory(category: string | null | undefined) {
   return category?.trim().toLocaleLowerCase("pt-BR") === "pessoal";
@@ -133,23 +101,6 @@ export interface TaskAttachment {
   created_at: string;
 }
 
-export interface DateDetails {
-  task_id: string;
-  age: number | null;
-  sign: string | null;
-  address: string | null;
-  height: string | null;
-  work: string | null;
-  met_via: string | null;
-  has_children: boolean | null;
-  location: string | null;
-  date_at: string | null;
-  personality_rating: number | null;
-  face_rating: number | null;
-  body_rating: number | null;
-  sex_rating: number | null;
-}
-
 export interface TaskComment {
   id: string;
   task_id: string;
@@ -189,13 +140,10 @@ export interface Task {
   subtasks: Subtask[];
   status_history: TaskStatusHistory[];
   description_history: TaskDescriptionHistory[];
-  date_details: DateDetails | null;
   comments: TaskComment[];
 }
 
 export type TaskView = "all" | "work" | "personal" | "study" | "travel";
-
-export type DateDetailsInput = Partial<Omit<DateDetails, "task_id">>;
 
 export interface CreateTaskInput {
   title: string;
@@ -205,7 +153,6 @@ export interface CreateTaskInput {
   type?: TaskType;
   category?: string | null;
   subtasks?: string[];
-  date_details?: Partial<Omit<DateDetails, "task_id">> | null;
 }
 
 export interface UpdateTaskInput {
@@ -215,12 +162,6 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   type?: TaskType;
   category?: string | null;
-  date_details?: Partial<Omit<DateDetails, "task_id">> | null;
-}
-
-export interface CreateSubtaskInput {
-  task_id: string;
-  title: string;
 }
 
 export interface UpdateSubtaskInput {

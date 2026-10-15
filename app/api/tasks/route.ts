@@ -28,7 +28,6 @@ export const POST = withAuth("Erro ao criar tarefa.", async (request: Request) =
     type: isTaskType(body.type) ? body.type : undefined,
     category: nullableString(body.category),
     subtasks: stringArray(body.subtasks),
-    date_details: body.date_details as never,
   });
 
   return NextResponse.json({ task }, { status: 201 });

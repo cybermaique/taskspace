@@ -46,7 +46,6 @@ export function Workspace(props: {
   initialView: WorkspaceView;
   initialTaskId: string | null;
   email: string | null;
-  isOwner: boolean;
 }) {
   return (
     <TooltipProvider delay={400}>

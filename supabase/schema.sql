@@ -8,7 +8,7 @@ create table if not exists public.tasks (
   description text,
   status text not null default 'not_started' check (status in ('not_started', 'in_progress', 'waiting', 'completed')),
   priority text not null default 'medium' check (priority in ('low', 'medium', 'high')),
-  type text not null default 'feature' check (type in ('feature', 'bug', 'improvement', 'date', 'study', 'travel', 'health', 'finance', 'personal')),
+  type text not null default 'feature' check (type in ('feature', 'bug', 'improvement', 'study', 'travel', 'health', 'finance', 'personal')),
   category text,
   position integer not null default 0,
   deleted_at timestamptz,
@@ -52,23 +52,6 @@ create table if not exists public.task_attachments (
   file_size bigint,
   last_viewed_at timestamptz,
   created_at timestamptz not null default now()
-);
-
-create table if not exists public.task_date_details (
-  task_id uuid primary key references public.tasks(id) on delete cascade,
-  age integer,
-  sign text,
-  address text,
-  height text,
-  work text,
-  met_via text,
-  has_children boolean,
-  location text,
-  date_at date,
-  personality_rating smallint check (personality_rating between 1 and 10),
-  face_rating smallint check (face_rating between 1 and 10),
-  body_rating smallint check (body_rating between 1 and 10),
-  sex_rating smallint check (sex_rating between 1 and 10)
 );
 
 create table if not exists public.task_comments (
@@ -154,15 +137,14 @@ after insert or update of status on public.tasks
 for each row
 execute function public.record_task_status_history();
 
-create or replace function public.record_master_task_description_history()
+create or replace function public.record_task_description_history()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  if lower(coalesce(auth.jwt() ->> 'email', '')) = 'maiqued.18@gmail.com'
-    and new.description is distinct from old.description then
+  if new.description is distinct from old.description then
     insert into public.task_description_history (task_id, description)
     values (old.id, old.description);
   end if;
@@ -171,11 +153,11 @@ begin
 end;
 $$;
 
-drop trigger if exists tasks_master_description_history on public.tasks;
-create trigger tasks_master_description_history
+drop trigger if exists tasks_description_history on public.tasks;
+create trigger tasks_description_history
 after update of description on public.tasks
 for each row
-execute function public.record_master_task_description_history();
+execute function public.record_task_description_history();
 
 drop trigger if exists subtasks_set_updated_at on public.subtasks;
 create trigger subtasks_set_updated_at
@@ -275,7 +257,6 @@ alter table public.subtasks enable row level security;
 alter table public.task_attachments enable row level security;
 alter table public.task_status_history enable row level security;
 alter table public.task_description_history enable row level security;
-alter table public.task_date_details enable row level security;
 alter table public.task_comments enable row level security;
 alter table public.note_attachments enable row level security;
 
@@ -296,10 +277,6 @@ drop policy if exists "Usuários acessam anexos próprios" on public.task_attach
 create policy "Usuários acessam anexos próprios" on public.task_attachments for all to authenticated
 using (exists (select 1 from public.tasks where tasks.id = task_attachments.task_id and tasks.user_id = auth.uid()))
 with check (exists (select 1 from public.tasks where tasks.id = task_attachments.task_id and tasks.user_id = auth.uid()));
-
-create policy "Usuários acessam detalhes Date próprios" on public.task_date_details for all to authenticated
-using (exists (select 1 from public.tasks where tasks.id = task_date_details.task_id and tasks.user_id = auth.uid()))
-with check (exists (select 1 from public.tasks where tasks.id = task_date_details.task_id and tasks.user_id = auth.uid()));
 
 create policy "Usuários acessam comentários próprios" on public.task_comments for all to authenticated
 using (exists (select 1 from public.tasks where tasks.id = task_comments.task_id and tasks.user_id = auth.uid()))
@@ -323,7 +300,7 @@ create policy "task_status_history_user_access" on public.task_status_history fo
 using (exists (select 1 from public.tasks where tasks.id = task_status_history.task_id and tasks.user_id = auth.uid()))
 with check (exists (select 1 from public.tasks where tasks.id = task_status_history.task_id and tasks.user_id = auth.uid()));
 
-drop policy if exists "master_accesses_task_description_history" on public.task_description_history;
-create policy "master_accesses_task_description_history" on public.task_description_history
+drop policy if exists "task_description_history_owner_read" on public.task_description_history;
+create policy "task_description_history_owner_read" on public.task_description_history
 for select to authenticated
-using (lower(coalesce(auth.jwt() ->> 'email', '')) = 'maiqued.18@gmail.com');
+using (exists (select 1 from public.tasks where tasks.id = task_description_history.task_id and tasks.user_id = auth.uid()));
