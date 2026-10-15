@@ -1,78 +1,35 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { isAuthorizedRequest, unauthorizedResponse } from "@/lib/access";
+import {
+  badRequest,
+  nullableString,
+  optionalString,
+  readJson,
+  stringArray,
+  withAuth,
+} from "@/lib/api/route";
 import { createTask, listTasks } from "@/lib/tasks";
-import type { TaskPriority, TaskType } from "@/types/task";
+import { isTaskPriority, isTaskStatus, isTaskType } from "@/types/task";
 
-export async function GET(request: NextRequest) {
-  if (!isAuthorizedRequest(request)) {
-    return unauthorizedResponse();
-  }
+export const GET = withAuth("Erro ao listar tarefas.", async () =>
+  NextResponse.json({ tasks: await listTasks() }),
+);
 
-  try {
-    const tasks = await listTasks();
-    return NextResponse.json({ tasks });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro ao listar tarefas.";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+export const POST = withAuth("Erro ao criar tarefa.", async (request: Request) => {
+  const body = await readJson(request);
+  const title = optionalString(body.title)?.trim();
+  if (!title) badRequest("Informe um título para a tarefa.");
 
-export async function POST(request: NextRequest) {
-  if (!isAuthorizedRequest(request)) {
-    return unauthorizedResponse();
-  }
+  const task = await createTask({
+    title: title.slice(0, 200),
+    description: optionalString(body.description),
+    status: isTaskStatus(body.status) ? body.status : undefined,
+    priority: isTaskPriority(body.priority) ? body.priority : undefined,
+    type: isTaskType(body.type) ? body.type : undefined,
+    category: nullableString(body.category),
+    subtasks: stringArray(body.subtasks),
+    date_details: body.date_details as never,
+  });
 
-  try {
-    const body = await request.json();
-    const title = typeof body.title === "string" ? body.title.trim() : "";
-
-    if (!title) {
-      return NextResponse.json(
-        { error: "Informe um título para a tarefa." },
-        { status: 400 },
-      );
-    }
-
-    const priority =
-      body.priority === "low" || body.priority === "medium" || body.priority === "high"
-        ? (body.priority as TaskPriority)
-        : undefined;
-    const type =
-      body.type === "feature" ||
-      body.type === "bug" ||
-      body.type === "improvement" ||
-      body.type === "date" ||
-      body.type === "study" ||
-      body.type === "travel" ||
-      body.type === "health" ||
-      body.type === "finance" ||
-      body.type === "personal"
-        ? (body.type as TaskType)
-        : undefined;
-    const subtasks = Array.isArray(body.subtasks)
-      ? body.subtasks
-          .filter((title: unknown): title is string => typeof title === "string")
-          .map((title: string) => title.trim())
-          .filter(Boolean)
-          .slice(0, 20)
-      : undefined;
-    const task = await createTask({
-      title,
-      description: typeof body.description === "string" ? body.description : "",
-      priority,
-      type,
-      category:
-        body.category === null || typeof body.category === "string"
-          ? body.category
-          : undefined,
-      subtasks,
-      date_details: body.date_details && typeof body.date_details === "object" ? body.date_details : undefined,
-    });
-
-    return NextResponse.json({ task }, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro ao criar tarefa.";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+  return NextResponse.json({ task }, { status: 201 });
+});

@@ -1,42 +1,18 @@
 import { NextResponse } from "next/server";
 
+import { optionalString, readJson, stringArray, withAuth } from "@/lib/api/route";
 import { createNote, listNotes } from "@/lib/notes";
 
-export async function GET() {
-  try {
-    const notes = await listNotes();
-    return NextResponse.json({ notes });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Erro ao buscar anotações.",
-      },
-      { status: 500 },
-    );
-  }
-}
+export const GET = withAuth("Erro ao buscar anotações.", async () =>
+  NextResponse.json({ notes: await listNotes() }),
+);
 
-export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as {
-      title?: string;
-      content?: string;
-      tags?: string[];
-    };
-    const note = await createNote({
-      title: body.title ?? "",
-      content: body.content ?? "",
-      tags: body.tags ?? null,
-    });
-    return NextResponse.json({ note }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Erro ao criar anotação.",
-      },
-      { status: 500 },
-    );
-  }
-}
+export const POST = withAuth("Erro ao criar anotação.", async (request: Request) => {
+  const body = await readJson(request);
+  const note = await createNote({
+    title: optionalString(body.title) ?? "",
+    content: optionalString(body.content) ?? "",
+    tags: stringArray(body.tags) ?? null,
+  });
+  return NextResponse.json({ note }, { status: 201 });
+});

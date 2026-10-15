@@ -169,13 +169,13 @@ export function DatePicker({
           }
           setOpen((current) => !current);
         }}
-        className="flex h-11 w-full min-w-0 items-center gap-2 rounded-xl border border-slate-900/10 bg-white px-3 text-left text-sm shadow-none transition hover:border-teal-500/50 focus-visible:border-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/25 disabled:cursor-not-allowed disabled:opacity-60 md:h-10 dark:border-white/10 dark:bg-black/20 dark:hover:border-teal-300/50"
+        className="flex h-9 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-sm shadow-none transition hover:border-ring focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <CalendarDays className="size-4 shrink-0 text-teal-600 dark:text-teal-300" />
-        <span className={selectedDate ? "truncate" : "truncate text-slate-500 dark:text-white/45"}>
+        <CalendarDays className="size-4 shrink-0 text-primary" />
+        <span className={selectedDate ? "truncate" : "truncate text-muted-foreground"}>
           {selectedDate ? displayFormatter.format(selectedDate) : placeholder}
         </span>
-        <ChevronDown className={["ml-auto size-4 shrink-0 text-slate-400 transition-transform", open ? "rotate-180" : ""].join(" ")} />
+        <ChevronDown className={["ml-auto size-4 shrink-0 text-muted-foreground transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
 
       {open && typeof document !== "undefined" ? createPortal(
@@ -183,25 +183,25 @@ export function DatePicker({
           ref={popoverRef}
           role="dialog"
           aria-label={placeholder}
-          className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-slate-900/10 bg-white p-3 text-slate-800 shadow-2xl shadow-slate-950/25 ring-1 ring-black/5 dark:border-white/15 dark:bg-[#111719] dark:text-white dark:shadow-black/70 dark:ring-white/10"
+          className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] rounded-xl border bg-popover p-3 text-popover-foreground shadow-lifted"
           style={{ top: placement.top, left: placement.left }}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-slate-900/10 pb-3 dark:border-white/10">
+          <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-600 dark:text-teal-300">Calendário</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Calendário</p>
               <p className="mt-0.5 text-sm font-semibold capitalize">{formatMonthYear(visibleMonth)}</p>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-900/5 hover:text-teal-600 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-teal-200" aria-label="Mês anterior">
+              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Mês anterior">
                 <ChevronLeft className="size-4" />
               </button>
-              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-900/5 hover:text-teal-600 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-teal-200" aria-label="Próximo mês">
+              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Próximo mês">
                 <ChevronRight className="size-4" />
               </button>
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-400 dark:text-white/40">
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
             {WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
           </div>
           <div className="mt-2 grid grid-cols-7 gap-1">
@@ -213,11 +213,11 @@ export function DatePicker({
                 aria-label={displayFormatter.format(date)}
                 aria-pressed={isSameDate(selectedDate, date)}
                 className={[
-                  "relative flex aspect-square items-center justify-center rounded-lg text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60",
+                  "relative flex aspect-square items-center justify-center rounded-lg text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   isSameDate(selectedDate, date)
-                    ? "bg-teal-500 font-semibold text-white shadow-lg shadow-teal-500/20"
-                    : "hover:bg-teal-500/10 hover:text-teal-700 dark:hover:bg-teal-300/10 dark:hover:text-teal-200",
-                  isSameDate(null, date) && date.getTime() === today.getTime() ? "ring-1 ring-inset ring-teal-500/60 dark:ring-teal-300/60" : "",
+                    ? "bg-primary font-semibold text-primary-foreground"
+                    : "hover:bg-brand-soft hover:text-primary",
+                  isSameDate(null, date) && date.getTime() === today.getTime() ? "ring-1 ring-inset ring-ring" : "",
                 ].join(" ")}
               >
                 {date.getDate()}
@@ -225,12 +225,12 @@ export function DatePicker({
             ) : <span key={`empty-${index}`} aria-hidden="true" />)}
           </div>
 
-          <div className="mt-3 flex items-center justify-between border-t border-slate-900/10 pt-3 dark:border-white/10">
-            <button type="button" onClick={() => { onChange(null); setOpen(false); }} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-600 dark:text-white/55 dark:hover:text-rose-300" disabled={!value}>
+          <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <button type="button" onClick={() => { onChange(null); setOpen(false); }} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive" disabled={!value}>
               <X className="size-3.5" />
               Limpar
             </button>
-            <button type="button" onClick={() => { const current = startOfDay(new Date()); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); selectDate(current); }} className="rounded-lg bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-500/20 dark:text-teal-200">
+            <button type="button" onClick={() => { const current = startOfDay(new Date()); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); selectDate(current); }} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">
               Hoje
             </button>
           </div>
@@ -349,13 +349,13 @@ export function DateRangePicker({
           setOpen((current) => !current);
         }}
         className={[
-          "flex h-11 w-full min-w-0 items-center gap-2 rounded-xl border border-slate-900/10 bg-white px-3 text-left text-sm shadow-none transition hover:border-teal-500/50 focus-visible:border-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/25 dark:border-white/10 dark:bg-black/20 dark:hover:border-teal-300/50",
-          compact ? "md:h-8 md:text-xs" : "md:h-10",
+          "flex h-9 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-sm shadow-none transition hover:border-ring focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          compact ? "h-8 text-[0.8125rem]" : "",
         ].join(" ")}
       >
-        <CalendarDays className="size-4 shrink-0 text-teal-600 dark:text-teal-300" />
-        <span className={fromDate ? "truncate" : "truncate text-slate-500 dark:text-white/45"}>{dateLabel}</span>
-        <ChevronDown className={["ml-auto size-4 shrink-0 text-slate-400 transition-transform", open ? "rotate-180" : ""].join(" ")} />
+        <CalendarDays className="size-4 shrink-0 text-primary" />
+        <span className={fromDate ? "truncate" : "truncate text-muted-foreground"}>{dateLabel}</span>
+        <ChevronDown className={["ml-auto size-4 shrink-0 text-muted-foreground transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
 
       {open && typeof document !== "undefined" ? createPortal(
@@ -363,21 +363,21 @@ export function DateRangePicker({
           ref={popoverRef}
           role="dialog"
           aria-label={placeholder}
-          className="fixed z-[9999] max-h-[calc(100dvh-1rem)] w-[min(18rem,calc(100vw-1rem))] overflow-y-auto rounded-2xl border border-slate-900/10 bg-white p-2 text-slate-800 shadow-2xl shadow-slate-950/25 ring-1 ring-black/5 dark:border-white/15 dark:bg-[#111719] dark:text-white dark:shadow-black/70"
+          className="fixed z-[9999] max-h-[calc(100dvh-1rem)] w-[min(18rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border bg-popover p-2 text-popover-foreground shadow-lifted"
           style={{ top: placement.top, left: placement.left }}
         >
-          <div className="flex items-center justify-between gap-1.5 border-b border-slate-900/10 pb-2 dark:border-white/10">
+          <div className="flex items-center justify-between gap-1.5 border-b border-border pb-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-600 dark:text-teal-300">Período</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Período</p>
               <p className="mt-0.5 text-xs font-semibold capitalize">{formatMonthYear(visibleMonth)}</p>
-              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-white/45">{fromDate && !toDate ? "Agora selecione o fim" : "Selecione o início"}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{fromDate && !toDate ? "Agora selecione o fim" : "Selecione o início"}</p>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-900/5 hover:text-teal-600 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-teal-200" aria-label="Mês anterior"><ChevronLeft className="size-4" /></button>
-              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-900/5 hover:text-teal-600 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-teal-200" aria-label="Próximo mês"><ChevronRight className="size-4" /></button>
+              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Mês anterior"><ChevronLeft className="size-4" /></button>
+              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Próximo mês"><ChevronRight className="size-4" /></button>
             </div>
           </div>
-          <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-slate-400 dark:text-white/40">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
+          <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
           <div className="mt-1 grid grid-cols-7 gap-0.5">
             {calendarDays.map((date, index) => {
               if (!date) return <span key={`empty-${index}`} aria-hidden="true" />;
@@ -391,16 +391,16 @@ export function DateRangePicker({
                   type="button"
                   onClick={() => selectDate(date)}
                   aria-label={displayFormatter.format(date)}
-                  className={["relative flex aspect-square items-center justify-center rounded-md text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60", isStart || isEnd ? "bg-teal-500 font-semibold text-white shadow-lg shadow-teal-500/20" : isBetween ? "bg-teal-500/15 text-teal-800 dark:bg-teal-300/15 dark:text-teal-100" : "hover:bg-teal-500/10 hover:text-teal-700 dark:hover:bg-teal-300/10 dark:hover:text-teal-200", isToday && !isStart && !isEnd ? "ring-1 ring-inset ring-teal-500/60 dark:ring-teal-300/60" : ""].join(" ")}
+                  className={["relative flex aspect-square items-center justify-center rounded-md text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", isStart || isEnd ? "bg-primary font-semibold text-primary-foreground" : isBetween ? "bg-primary/15 text-primary" : "hover:bg-brand-soft hover:text-primary", isToday && !isStart && !isEnd ? "ring-1 ring-inset ring-ring" : ""].join(" ")}
                 >
                   {date.getDate()}
                 </button>
               );
             })}
           </div>
-          <div className="mt-2 flex items-center justify-between border-t border-slate-900/10 pt-2 dark:border-white/10">
-            <button type="button" onClick={() => { onChange("", ""); setOpen(false); }} disabled={!from && !to} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-600 disabled:opacity-40 dark:text-white/55 dark:hover:text-rose-300"><X className="size-3.5" />Limpar</button>
-            <button type="button" onClick={() => { const current = startOfDay(new Date()); const value = toIsoDate(current); onChange(value, value); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); setOpen(false); }} className="rounded-lg bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-500/20 dark:text-teal-200">Hoje</button>
+          <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
+            <button type="button" onClick={() => { onChange("", ""); setOpen(false); }} disabled={!from && !to} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"><X className="size-3.5" />Limpar</button>
+            <button type="button" onClick={() => { const current = startOfDay(new Date()); const value = toIsoDate(current); onChange(value, value); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); setOpen(false); }} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">Hoje</button>
           </div>
         </div>,
         document.body,

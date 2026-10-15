@@ -1,19 +1,37 @@
-export type TaskStatus =
-  | "not_started"
-  | "in_progress"
-  | "waiting"
-  | "completed";
-export type TaskPriority = "low" | "medium" | "high";
-export type TaskType =
-  | "feature"
-  | "bug"
-  | "improvement"
-  | "date"
-  | "study"
-  | "travel"
-  | "health"
-  | "finance"
-  | "personal";
+export const TASK_STATUSES = [
+  "not_started",
+  "in_progress",
+  "waiting",
+  "completed",
+] as const;
+export const TASK_PRIORITIES = ["low", "medium", "high"] as const;
+export const TASK_TYPES = [
+  "feature",
+  "bug",
+  "improvement",
+  "date",
+  "study",
+  "travel",
+  "health",
+  "finance",
+  "personal",
+] as const;
+
+export type TaskStatus = (typeof TASK_STATUSES)[number];
+export type TaskPriority = (typeof TASK_PRIORITIES)[number];
+export type TaskType = (typeof TASK_TYPES)[number];
+
+export function isTaskStatus(value: unknown): value is TaskStatus {
+  return TASK_STATUSES.includes(value as TaskStatus);
+}
+
+export function isTaskPriority(value: unknown): value is TaskPriority {
+  return TASK_PRIORITIES.includes(value as TaskPriority);
+}
+
+export function isTaskType(value: unknown): value is TaskType {
+  return TASK_TYPES.includes(value as TaskType);
+}
 
 export const WORK_TASK_TYPE_OPTIONS = [
   { value: "feature", label: "Feature" },
@@ -177,9 +195,12 @@ export interface Task {
 
 export type TaskView = "all" | "work" | "personal" | "study" | "travel";
 
+export type DateDetailsInput = Partial<Omit<DateDetails, "task_id">>;
+
 export interface CreateTaskInput {
   title: string;
   description?: string;
+  status?: TaskStatus;
   priority?: TaskPriority;
   type?: TaskType;
   category?: string | null;

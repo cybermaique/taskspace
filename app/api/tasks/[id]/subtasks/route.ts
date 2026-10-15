@@ -1,36 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { isAuthorizedRequest, unauthorizedResponse } from "@/lib/access";
-import { createSubtask, getTaskById } from "@/lib/tasks";
+import { badRequest, optionalString, readJson, withAuth } from "@/lib/api/route";
+import { createSubtask } from "@/lib/tasks";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+type Context = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
-  if (!isAuthorizedRequest(request)) {
-    return unauthorizedResponse();
-  }
-
-  const { id } = await params;
-
-  try {
-    const body = await request.json();
-    const title = typeof body.title === "string" ? body.title.trim() : "";
-
-    if (!title) {
-      return NextResponse.json(
-        { error: "Informe um título para a subtarefa." },
-        { status: 400 },
-      );
-    }
-
-    await createSubtask({ task_id: id, title });
-    const task = await getTaskById(id);
-
-    return NextResponse.json({ task }, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro ao criar subtarefa.";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+export const POST = withAuth(
+  "Não foi possível criar a subtarefa.",
+  async (request: Request, { params }: Context) => {
+    const { id } = await params;
+    const title = optionalString((await readJson(request)).title)?.trim();
+    if (!title) badRequest("Informe o título da subtarefa.");
+    return NextResponse.json({ task: await createSubtask(id, title) }, { status: 201 });
+  },
+);

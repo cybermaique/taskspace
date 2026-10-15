@@ -1,26 +1,57 @@
 # Taskboard
 
-Organizador pessoal de tarefas, subtarefas, anexos e anotações, persistido no Supabase.
+Organizador pessoal de tarefas, subtarefas e anotações, persistido no Supabase.
 
 ## Stack
 
-- Next.js 16 (App Router)
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui
-- Supabase (Postgres e Storage)
-- Vercel
-- ESLint
+- Next.js 16 (App Router, Server Components, `proxy.ts`)
+- React 19 + TypeScript
+- Tailwind CSS v4 com tokens de tema (claro, escuro e conforto)
+- Base UI (primitivos acessíveis) e dnd-kit (arrastar e soltar com mouse, toque e teclado)
+- Supabase (Auth, Postgres com RLS e Storage)
 
 ## Recursos
 
-- CRUD de tarefas com prioridade, categoria, prazo, planejamento e recorrência
-- Subtarefas por tarefa
-- Anexos em tarefas
-- Filtros, busca, agrupamento por prazo e ordenação manual
-- Anotações com tags, prévia para textos extensos e visualização de JSON
-- Títulos obrigatórios e datas de criação/atualização nas anotações
-- Tema claro/escuro e proteção opcional via `APP_PASSWORD`
+- **Quadro Kanban** com arrastar entre colunas (inclusive no celular), criação rápida inline por coluna e visualização alternativa em **lista**
+- **Painel de detalhes** com edição inline de título, status, prioridade, categoria e tipo; descrição com links e blocos de código; subtarefas reordenáveis; anexos (colar print, arrastar ou escolher); comentários e histórico de status
+- **Anotações** em grade, com #tags, fixadas reordenáveis, anexos e visualização/edição em uma única janela
+- **Paleta de comandos** (`Ctrl K`) que busca tarefas, anotações e ações
+- Indicadores do quadro com conclusões dos últimos 14 dias
+- Lixeira com restauração e "Desfazer" logo após excluir
+- Preferências: foto, nome, cor de destaque, tema e densidade (confortável/compacta)
+- Atualizações otimistas: mover, concluir e excluir respondem na hora e são revertidos se a API falhar
+
+### Atalhos
+
+| Tecla | Ação |
+| --- | --- |
+| `Ctrl K` | Paleta de comandos |
+| `C` | Nova tarefa / anotação |
+| `/` | Focar a busca |
+| `1` / `2` | Tarefas / Anotações |
+| `?` | Lista de atalhos |
+| `Ctrl Enter` | Salvar formulários |
+
+## Arquitetura
+
+```
+app/
+  page.tsx          # Server Component: autentica e carrega tarefas, anotações e perfil
+  login/            # Tela de entrada (redireciona se já houver sessão)
+  api/              # Route Handlers (todos via withAuth em lib/api/route.ts)
+proxy.ts            # Renova a sessão do Supabase a cada requisição
+components/
+  workspace/        # Provider de estado, shell (sidebar/nav mobile), paleta, diálogos globais
+  tasks/            # Quadro, lista, card, painel de detalhes, criação
+  notes/            # Grade, card e editor de anotações
+  ui/               # Primitivos (Base UI + Tailwind)
+lib/
+  tasks.ts, notes.ts  # Acesso a dados no servidor
+  auth.ts             # Usuário e perfil da requisição (React cache)
+  api-client.ts       # fetch tipado para o cliente
+```
+
+O estado do cliente vive em `WorkspaceProvider`, que expõe dados, ações (com atualização otimista) e estado de interface por contextos separados. A seção atual e a tarefa aberta ficam na URL (`?view=notes`, `?task=<id>`), então links e recarregamentos preservam o contexto.
 
 ## Configuração
 
@@ -31,7 +62,6 @@ Organizador pessoal de tarefas, subtarefas, anexos e anotações, persistido no 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon
-APP_PASSWORD=uma_senha_opcional
 ```
 
 4. Instale e execute:
