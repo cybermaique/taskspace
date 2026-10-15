@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, Keyboard, LogOut, Settings2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
 import {
@@ -20,15 +21,20 @@ import { useWorkspace, useWorkspaceUI } from "@/components/workspace/workspace-p
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
-export async function signOut() {
-  await createSupabaseBrowserClient().auth.signOut();
-  window.location.assign("/login");
+export function useSignOut() {
+  const router = useRouter();
+  return async () => {
+    await createSupabaseBrowserClient().auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  };
 }
 
 export function UserMenu({ compact = false }: { compact?: boolean }) {
   const { profile, email } = useWorkspace();
   const { setSettingsOpen, setTrashOpen, setShortcutsOpen } = useWorkspaceUI();
   const { theme, setTheme } = useTheme();
+  const signOut = useSignOut();
 
   return (
     <Menu>

@@ -21,7 +21,7 @@ import { taskMatchesQuery } from "@/components/tasks/use-task-filters";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Kbd } from "@/components/ui/kbd";
 import { THEME_OPTIONS } from "@/components/workspace/theme-options";
-import { signOut } from "@/components/workspace/user-menu";
+import { useSignOut } from "@/components/workspace/user-menu";
 import { useWorkspace, useWorkspaceUI } from "@/components/workspace/workspace-provider";
 import { STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
   const { tasks, notes } = useWorkspace();
   const ui = useWorkspaceUI();
   const { setTheme } = useTheme();
+  const signOut = useSignOut();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -115,7 +116,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       }));
 
     return q ? [...matchedTasks, ...matchedNotes, ...commands] : [...commands.slice(0, 4), ...matchedTasks, ...matchedNotes, ...commands.slice(4)];
-  }, [notes, onClose, query, setTheme, tasks, ui]);
+  }, [notes, onClose, query, setTheme, signOut, tasks, ui]);
 
   const safeIndex = Math.min(activeIndex, Math.max(0, items.length - 1));
 

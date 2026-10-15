@@ -20,6 +20,8 @@ export async function apiRequest<T>(
   }
 
   if (response.status === 401) {
+    // A hard navigation drops all client state tied to the expired session.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign("/login");
   }
 
