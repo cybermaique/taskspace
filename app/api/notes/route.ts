@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { optionalString, readJson, stringArray, withAuth } from "@/lib/api/route";
+import { parseJson, withAuth } from "@/lib/api/route";
+import { createNoteSchema } from "@/lib/api/schemas";
 import { createNote, listNotes } from "@/lib/notes";
 
 export const GET = withAuth("Erro ao buscar anotações.", async () =>
@@ -8,11 +9,6 @@ export const GET = withAuth("Erro ao buscar anotações.", async () =>
 );
 
 export const POST = withAuth("Erro ao criar anotação.", async (request: Request) => {
-  const body = await readJson(request);
-  const note = await createNote({
-    title: optionalString(body.title) ?? "",
-    content: optionalString(body.content) ?? "",
-    tags: stringArray(body.tags) ?? null,
-  });
+  const note = await createNote(await parseJson(request, createNoteSchema));
   return NextResponse.json({ note }, { status: 201 });
 });

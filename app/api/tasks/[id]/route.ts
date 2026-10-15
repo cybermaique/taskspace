@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { nullableString, optionalString, readJson, withAuth } from "@/lib/api/route";
+import { parseJson, withAuth } from "@/lib/api/route";
+import { updateTaskSchema } from "@/lib/api/schemas";
 import { deleteTask, updateTask } from "@/lib/tasks";
-import { isTaskPriority, isTaskStatus, isTaskType } from "@/types/task";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -10,16 +10,7 @@ export const PATCH = withAuth(
   "Erro ao atualizar tarefa.",
   async (request: Request, { params }: Context) => {
     const { id } = await params;
-    const body = await readJson(request);
-
-    const task = await updateTask(id, {
-      title: optionalString(body.title),
-      description: nullableString(body.description),
-      status: isTaskStatus(body.status) ? body.status : undefined,
-      priority: isTaskPriority(body.priority) ? body.priority : undefined,
-      type: isTaskType(body.type) ? body.type : undefined,
-      category: nullableString(body.category),
-    });
+    const task = await updateTask(id, await parseJson(request, updateTaskSchema));
 
     return NextResponse.json({ task });
   },

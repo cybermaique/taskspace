@@ -1,7 +1,9 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
+import type { z } from "zod";
 
+import { describeIssue } from "@/lib/api/schemas";
 import { getCurrentUser } from "@/lib/auth";
 
 export class HttpError extends Error {
@@ -38,13 +40,20 @@ export function withAuth<Args extends unknown[]>(
   };
 }
 
-export async function readJson(request: Request): Promise<Record<string, unknown>> {
+/** Parses and validates a JSON body; invalid input becomes a 400 with a readable message. */
+export async function parseJson<Schema extends z.ZodType>(
+  request: Request,
+  schema: Schema,
+): Promise<z.infer<Schema>> {
+  let body: unknown;
   try {
-    const body: unknown = await request.json();
-    return body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    body = await request.json();
   } catch {
     badRequest("Corpo da requisição inválido.");
   }
+  const result = schema.safeParse(body);
+  if (!result.success) badRequest(describeIssue(result.error));
+  return result.data;
 }
 
 export async function readFile(request: Request) {
@@ -52,20 +61,6 @@ export async function readFile(request: Request) {
   if (!(file instanceof File)) badRequest("Selecione um arquivo.");
   if (file.size > 25 * 1024 * 1024) badRequest("O arquivo deve ter no máximo 25 MB.");
   return file;
-}
-
-export function optionalString(value: unknown) {
-  return typeof value === "string" ? value : undefined;
-}
-
-export function nullableString(value: unknown) {
-  return value === null || typeof value === "string" ? value : undefined;
-}
-
-export function stringArray(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : undefined;
 }
 
 export function fileResponse(

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { optionalString, readJson, stringArray, withAuth } from "@/lib/api/route";
+import { parseJson, withAuth } from "@/lib/api/route";
+import { updateNoteSchema } from "@/lib/api/schemas";
 import { deleteNote, updateNote } from "@/lib/notes";
 
 type Context = { params: Promise<{ id: string }> };
@@ -9,17 +10,7 @@ export const PATCH = withAuth(
   "Erro ao atualizar anotação.",
   async (request: Request, { params }: Context) => {
     const { id } = await params;
-    const body = await readJson(request);
-    const note = await updateNote(id, {
-      title: optionalString(body.title),
-      content: optionalString(body.content),
-      tags: body.tags === null ? null : stringArray(body.tags),
-      is_pinned: typeof body.is_pinned === "boolean" ? body.is_pinned : undefined,
-      pinned_position:
-        body.pinned_position === null || typeof body.pinned_position === "number"
-          ? body.pinned_position
-          : undefined,
-    });
+    const note = await updateNote(id, await parseJson(request, updateNoteSchema));
     return NextResponse.json({ note });
   },
 );

@@ -24,8 +24,7 @@ import {
   useWorkspaceUI,
 } from "@/components/workspace/workspace-provider";
 import { errorMessage } from "@/lib/api-client";
-import { applyDocumentAccent, mapProfile, PROFILE_COLUMNS } from "@/lib/profile";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { applyDocumentAccent } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import { PROFILE_ACCENTS, type ProfileAccent, type ProfileDisplayMode } from "@/types/profile";
 
@@ -88,29 +87,10 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
     }
     setSaving(true);
     try {
-      const supabase = createSupabaseBrowserClient();
-      let avatarUrl = removeAvatar ? null : profile.avatar_url;
-
-      if (avatarFile) {
-        const extension = avatarFile.type.split("/")[1] || "png";
-        const path = `${profile.id}/avatar.${extension}`;
-        const { error } = await supabase.storage
-          .from("profile-avatars")
-          .upload(path, avatarFile, { cacheControl: "3600", contentType: avatarFile.type, upsert: true });
-        if (error) throw new Error(error.message);
-        avatarUrl = `${supabase.storage.from("profile-avatars").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({ nickname: name, avatar_url: avatarUrl, accent_color: accent, display_mode: displayMode })
-        .eq("id", profile.id)
-        .select(PROFILE_COLUMNS)
-        .single();
-      const next = mapProfile(data);
-      if (error || !next) throw new Error(error?.message ?? "Não foi possível salvar o perfil.");
-
-      actions.setProfile(next);
+      await actions.saveProfile(
+        { nickname: name, accent_color: accent, display_mode: displayMode, removeAvatar },
+        avatarFile,
+      );
       toast.success("Preferências salvas");
       onClose();
     } catch (error) {

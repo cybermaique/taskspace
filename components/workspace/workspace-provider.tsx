@@ -121,7 +121,10 @@ interface WorkspaceActions {
   togglePin: (id: string) => Promise<void>;
   reorderPinned: (ids: string[]) => Promise<void>;
 
-  setProfile: (profile: Profile) => void;
+  saveProfile: (
+    input: Pick<Profile, "nickname" | "accent_color" | "display_mode"> & { removeAvatar?: boolean },
+    avatar?: File | null,
+  ) => Promise<Profile>;
   loadTrash: () => Promise<{ tasks: Task[]; notes: Note[] }>;
 }
 
@@ -559,7 +562,15 @@ export function WorkspaceProvider({
         }
       },
 
-      setProfile: setProfileState,
+      async saveProfile({ removeAvatar, ...fields }, avatar) {
+        if (avatar) await uploadFile<{ profile: Profile }>("/api/profile/avatar", avatar);
+        const { profile } = await apiRequest<{ profile: Profile }>("/api/profile", {
+          method: "PATCH",
+          json: removeAvatar && !avatar ? { ...fields, avatar_url: null } : fields,
+        });
+        setProfileState(profile);
+        return profile;
+      },
 
       async loadTrash() {
         return apiRequest<{ tasks: Task[]; notes: Note[] }>("/api/trash");

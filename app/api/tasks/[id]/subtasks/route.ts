@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { badRequest, optionalString, readJson, withAuth } from "@/lib/api/route";
+import { parseJson, withAuth } from "@/lib/api/route";
+import { createSubtaskSchema } from "@/lib/api/schemas";
 import { createSubtask } from "@/lib/tasks";
 
 type Context = { params: Promise<{ id: string }> };
@@ -9,8 +10,7 @@ export const POST = withAuth(
   "Não foi possível criar a subtarefa.",
   async (request: Request, { params }: Context) => {
     const { id } = await params;
-    const title = optionalString((await readJson(request)).title)?.trim();
-    if (!title) badRequest("Informe o título da subtarefa.");
+    const { title } = await parseJson(request, createSubtaskSchema);
     return NextResponse.json({ task: await createSubtask(id, title) }, { status: 201 });
   },
 );
