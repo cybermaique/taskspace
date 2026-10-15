@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isSamePermutation } from "@/lib/ordering";
+import { rpcWithFallback } from "@/lib/supabase/rpc";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   isTaskPriority,
@@ -250,20 +252,21 @@ export async function reorderTasks(orderedTaskIds: string[]) {
   if (error) throw new Error(error.message);
 
   const current = new Map((data ?? []).map((task) => [task.id as string, task.position as number]));
-  const ids = new Set(orderedTaskIds);
-  if (ids.size !== current.size || orderedTaskIds.some((id) => !current.has(id))) {
+  if (!isSamePermutation(current.keys(), orderedTaskIds)) {
     throw new Error("A ordem das tarefas está desatualizada. Recarregue a página.");
   }
 
-  // Only rows whose position actually changed are written.
-  const results = await Promise.all(
-    orderedTaskIds
-      .map((id, position) => ({ id, position }))
-      .filter(({ id, position }) => current.get(id) !== position)
-      .map(({ id, position }) => supabase.from("tasks").update({ position }).eq("id", id)),
-  );
-  const updateError = results.find((result) => result.error)?.error;
-  if (updateError) throw new Error(updateError.message);
+  await rpcWithFallback(supabase, "reorder_tasks", { task_ids: orderedTaskIds }, async () => {
+    // Pre-migration path: one request per row whose position changed.
+    const results = await Promise.all(
+      orderedTaskIds
+        .map((id, position) => ({ id, position }))
+        .filter(({ id, position }) => current.get(id) !== position)
+        .map(({ id, position }) => supabase.from("tasks").update({ position }).eq("id", id)),
+    );
+    const updateError = results.find((result) => result.error)?.error;
+    if (updateError) throw new Error(updateError.message);
+  });
 }
 
 /* ── attachments ───────────────────────────────────────── */
@@ -417,22 +420,25 @@ export async function reorderSubtasks(taskId: string, orderedSubtaskIds: string[
     .eq("task_id", taskId);
   if (currentError) throw new Error(currentError.message);
 
-  const currentIds = new Set((currentSubtasks ?? []).map((subtask) => subtask.id as string));
-  const uniqueIds = new Set(orderedSubtaskIds);
-  if (
-    uniqueIds.size !== currentIds.size ||
-    orderedSubtaskIds.some((id) => !currentIds.has(id))
-  ) {
+  const currentIds = (currentSubtasks ?? []).map((subtask) => subtask.id as string);
+  if (!isSamePermutation(currentIds, orderedSubtaskIds)) {
     throw new Error("A ordem das subtarefas está desatualizada.");
   }
 
-  const updates = await Promise.all(
-    orderedSubtaskIds.map((id, position) =>
-      supabase.from("subtasks").update({ position }).eq("id", id).eq("task_id", taskId),
-    ),
+  await rpcWithFallback(
+    supabase,
+    "reorder_subtasks",
+    { p_task_id: taskId, subtask_ids: orderedSubtaskIds },
+    async () => {
+      const updates = await Promise.all(
+        orderedSubtaskIds.map((id, position) =>
+          supabase.from("subtasks").update({ position }).eq("id", id).eq("task_id", taskId),
+        ),
+      );
+      const updateError = updates.find((result) => result.error)?.error;
+      if (updateError) throw new Error(updateError.message);
+    },
   );
-  const updateError = updates.find((result) => result.error)?.error;
-  if (updateError) throw new Error(updateError.message);
 
   return getTaskById(taskId);
 }

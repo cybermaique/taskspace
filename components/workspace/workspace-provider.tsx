@@ -14,6 +14,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { apiRequest, errorMessage, uploadFile } from "@/lib/api-client";
 import { celebrate } from "@/lib/celebrate";
+import { planTaskMove } from "@/lib/ordering";
 import { applyDocumentAccent } from "@/lib/profile";
 import type { Note } from "@/types/note";
 import type { Profile } from "@/types/profile";
@@ -289,25 +290,12 @@ export function WorkspaceProvider({
 
       moveTask(id, status, beforeId) {
         const ordered = tasksRef.current;
-        const moving = ordered.find((task) => task.id === id);
-        if (!moving) return;
-
-        const rest = ordered.filter((task) => task.id !== id);
-        let insertAt = beforeId ? rest.findIndex((task) => task.id === beforeId) : -1;
-        if (insertAt === -1) {
-          // Drop at the end of the column: right after its last task.
-          const lastInColumn = rest.findLastIndex((task) => task.status === status);
-          insertAt = lastInColumn === -1 ? rest.length : lastInColumn + 1;
-        }
-
-        const moved = applyTaskPatch(moving, { status });
-        rest.splice(insertAt, 0, moved);
-        const statusChanged = moving.status !== status;
-        const orderChanged = rest.some((task, index) => ordered[index]?.id !== task.id);
-        if (!statusChanged && !orderChanged) return;
+        const plan = planTaskMove(ordered, id, status, beforeId);
+        if (!plan) return;
+        const { tasks: rest, statusChanged, orderChanged } = plan;
 
         const snapshot = ordered;
-        setTasks(rest.map((task, position) => ({ ...task, position })));
+        setTasks(rest);
         if (statusChanged && status === "completed") celebrate();
 
         void enqueue(async () => {

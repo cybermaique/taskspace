@@ -1,5 +1,6 @@
 import "server-only";
 
+import { rpcWithFallback } from "@/lib/supabase/rpc";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreateNoteInput, Note, NoteAttachment, UpdateNoteInput } from "@/types/note";
 
@@ -124,6 +125,13 @@ export async function reorderPinnedNotes(noteIds: string[]) {
   const uniqueIds = [...new Set(noteIds)].filter((id) => id.trim().length > 0);
   if (uniqueIds.length === 0) return;
 
+  await rpcWithFallback(supabase, "reorder_pinned_notes", { note_ids: uniqueIds }, () =>
+    reorderPinnedNotesPerRow(uniqueIds),
+  );
+}
+
+async function reorderPinnedNotesPerRow(uniqueIds: string[]) {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("notes")
     .select("id")
