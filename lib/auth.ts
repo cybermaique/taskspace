@@ -2,10 +2,12 @@ import "server-only";
 
 import { cache } from "react";
 
+import { isSupabaseConfigured } from "@/lib/env";
 import { fallbackNickname, mapProfile, PROFILE_COLUMNS } from "@/lib/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const getCurrentUser = cache(async () => {
+  if (!isSupabaseConfigured()) return null;
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;

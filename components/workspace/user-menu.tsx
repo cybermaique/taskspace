@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronsUpDown, Keyboard, LogOut, Settings2, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
 import {
@@ -17,24 +16,18 @@ import {
 } from "@/components/ui/menu";
 import { ProfileAvatar } from "@/components/workspace/profile-avatar";
 import { THEME_OPTIONS } from "@/components/workspace/theme-options";
-import { useWorkspace, useWorkspaceUI } from "@/components/workspace/workspace-provider";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import {
+  useWorkspace,
+  useWorkspaceActions,
+  useWorkspaceUI,
+} from "@/components/workspace/workspace-provider";
 import { cn } from "@/lib/utils";
 
-export function useSignOut() {
-  const router = useRouter();
-  return async () => {
-    await createSupabaseBrowserClient().auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  };
-}
-
 export function UserMenu({ compact = false }: { compact?: boolean }) {
-  const { profile, email } = useWorkspace();
+  const { profile, email, mode } = useWorkspace();
+  const { signOut } = useWorkspaceActions();
   const { setSettingsOpen, setTrashOpen, setShortcutsOpen } = useWorkspaceUI();
   const { theme, setTheme } = useTheme();
-  const signOut = useSignOut();
 
   return (
     <Menu>
@@ -86,7 +79,7 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
         <MenuSeparator />
         <MenuItem destructive onClick={() => void signOut()}>
           <LogOut />
-          Sair
+          {mode === "demo" ? "Sair da demonstração" : "Sair"}
         </MenuItem>
       </MenuContent>
     </Menu>

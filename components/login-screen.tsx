@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleCheck, Eye, EyeOff, LoaderCircle, NotebookPen, Search, SquareKanban } from "lucide-react";
+import { CircleCheck, Eye, EyeOff, FlaskConical, LoaderCircle, NotebookPen, Search, SquareKanban } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,6 +194,15 @@ export function LoginScreen() {
             </Button>
           </form>
 
+          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            ou
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <Button variant="outline" size="lg" className="w-full" nativeButton={false} render={<Link href="/demo" />}>
+            <FlaskConical />
+            Explorar a demonstração
+          </Button>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {isSignUp ? "Já tem conta?" : "Ainda não tem conta?"}{" "}
             <button

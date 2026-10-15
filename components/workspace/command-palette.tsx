@@ -7,6 +7,7 @@ import {
   LogOut,
   NotebookPen,
   Plus,
+  RotateCcw,
   Search,
   Settings2,
   SquareKanban,
@@ -21,8 +22,12 @@ import { taskMatchesQuery } from "@/components/tasks/use-task-filters";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Kbd } from "@/components/ui/kbd";
 import { THEME_OPTIONS } from "@/components/workspace/theme-options";
-import { useSignOut } from "@/components/workspace/user-menu";
-import { useWorkspace, useWorkspaceUI } from "@/components/workspace/workspace-provider";
+import {
+  useWorkspace,
+  useWorkspaceActions,
+  useWorkspaceUI,
+} from "@/components/workspace/workspace-provider";
+import { resetDemoState } from "@/lib/demo/demo-transport";
 import { STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 
@@ -45,10 +50,10 @@ function normalize(value: string) {
 }
 
 function PaletteBody({ onClose }: { onClose: () => void }) {
-  const { tasks, notes } = useWorkspace();
+  const { tasks, notes, mode } = useWorkspace();
+  const { signOut } = useWorkspaceActions();
   const ui = useWorkspaceUI();
   const { setTheme } = useTheme();
-  const signOut = useSignOut();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -76,6 +81,21 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       { id: "trash", group: "Ações", label: "Abrir lixeira", icon: Trash2, run: run(() => ui.setTrashOpen(true)) },
       { id: "settings", group: "Ações", label: "Preferências", keywords: "perfil avatar cor apelido", icon: Settings2, run: run(() => ui.setSettingsOpen(true)) },
       { id: "shortcuts", group: "Ações", label: "Atalhos de teclado", icon: Keyboard, hint: <Kbd>?</Kbd>, run: run(() => ui.setShortcutsOpen(true)) },
+      ...(mode === "demo"
+        ? [
+            {
+              id: "demo-reset",
+              group: "Ações",
+              label: "Restaurar dados da demonstração",
+              keywords: "reset demo exemplo",
+              icon: RotateCcw,
+              run: run(() => {
+                resetDemoState();
+                window.location.reload();
+              }),
+            },
+          ]
+        : []),
       { id: "logout", group: "Ações", label: "Sair", icon: LogOut, run: run(() => void signOut()) },
     ];
     const commands = allCommands.filter(
@@ -116,7 +136,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       }));
 
     return q ? [...matchedTasks, ...matchedNotes, ...commands] : [...commands.slice(0, 4), ...matchedTasks, ...matchedNotes, ...commands.slice(4)];
-  }, [notes, onClose, query, setTheme, signOut, tasks, ui]);
+  }, [mode, notes, onClose, query, setTheme, signOut, tasks, ui]);
 
   const safeIndex = Math.min(activeIndex, Math.max(0, items.length - 1));
 

@@ -17,6 +17,7 @@ import {
   WorkspaceProvider,
   type WorkspaceView,
 } from "@/components/workspace/workspace-provider";
+import type { Transport } from "@/lib/transport";
 import type { Note } from "@/types/note";
 import type { Profile } from "@/types/profile";
 import type { Task } from "@/types/task";
@@ -46,6 +47,7 @@ export function Workspace(props: {
   initialView: WorkspaceView;
   initialTaskId: string | null;
   email: string | null;
+  transport?: Transport;
 }) {
   return (
     <TooltipProvider delay={400}>

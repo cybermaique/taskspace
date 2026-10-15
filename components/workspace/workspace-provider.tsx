@@ -12,10 +12,14 @@ import {
 } from "react";
 
 import { useToast } from "@/components/ui/toast";
-import { apiRequest, errorMessage, uploadFile } from "@/lib/api-client";
+import { useRouter } from "next/navigation";
+
+import { errorMessage } from "@/lib/api-client";
 import { celebrate } from "@/lib/celebrate";
 import { planTaskMove } from "@/lib/ordering";
 import { applyDocumentAccent } from "@/lib/profile";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { httpTransport, type Transport } from "@/lib/transport";
 import type { Note } from "@/types/note";
 import type { Profile } from "@/types/profile";
 import type {
@@ -65,6 +69,7 @@ function applyTaskPatch(task: Task, patch: UpdateTaskInput): Task {
 /* ── context ───────────────────────────────────────────── */
 
 interface WorkspaceData {
+  mode: Transport["mode"];
   tasks: Task[];
   notes: Note[];
   profile: Profile;
@@ -126,6 +131,7 @@ interface WorkspaceActions {
     avatar?: File | null,
   ) => Promise<Profile>;
   loadTrash: () => Promise<{ tasks: Task[]; notes: Note[] }>;
+  signOut: () => Promise<void>;
 }
 
 const DataContext = createContext<WorkspaceData | null>(null);
@@ -160,6 +166,7 @@ export function WorkspaceProvider({
   initialView,
   initialTaskId,
   email,
+  transport = httpTransport,
   children,
 }: {
   initialTasks: Task[];
@@ -168,9 +175,11 @@ export function WorkspaceProvider({
   initialView: WorkspaceView;
   initialTaskId: string | null;
   email: string | null;
+  transport?: Transport;
   children: ReactNode;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const [tasks, setTasks] = useState(() => sortByPosition(initialTasks));
   const [notes, setNotes] = useState(initialNotes);
   const [profile, setProfileState] = useState(initialProfile);
@@ -229,8 +238,8 @@ export function WorkspaceProvider({
       toast.error(errorMessage(error, fallback));
     };
 
-    const taskRequest = (url: string, init?: Parameters<typeof apiRequest>[1]) =>
-      apiRequest<{ task: Task }>(url, init).then(({ task }) => {
+    const taskRequest = (url: string, init?: Parameters<Transport["request"]>[1]) =>
+      transport.request<{ task: Task }>(url, init).then(({ task }) => {
         replaceTask(task);
         return task;
       });
@@ -246,7 +255,7 @@ export function WorkspaceProvider({
 
     const restoreNote = async (id: string) => {
       try {
-        const { note } = await apiRequest<{ note: Note }>(`/api/notes/${id}/restore`, {
+        const { note } = await transport.request<{ note: Note }>(`/api/notes/${id}/restore`, {
           method: "POST",
         });
         replaceNote(note);
@@ -258,14 +267,14 @@ export function WorkspaceProvider({
 
     return {
       async createTask(input, files = []) {
-        let { task } = await apiRequest<{ task: Task }>("/api/tasks", {
+        let { task } = await transport.request<{ task: Task }>("/api/tasks", {
           method: "POST",
           json: input,
         });
         replaceTask(task);
         for (const file of files) {
           try {
-            ({ task } = await uploadFile<{ task: Task }>(`/api/tasks/${task.id}/attachments`, file));
+            ({ task } = await transport.upload<{ task: Task }>(`/api/tasks/${task.id}/attachments`, file));
             replaceTask(task);
           } catch (error) {
             fail(error, `Não foi possível anexar ${file.name}.`);
@@ -304,7 +313,7 @@ export function WorkspaceProvider({
         void enqueue(async () => {
           try {
             if (statusChanged) {
-              const { task } = await apiRequest<{ task: Task }>(`/api/tasks/${id}`, {
+              const { task } = await transport.request<{ task: Task }>(`/api/tasks/${id}`, {
                 method: "PATCH",
                 json: { status },
               });
@@ -313,7 +322,7 @@ export function WorkspaceProvider({
               );
             }
             if (orderChanged) {
-              await apiRequest("/api/tasks/reorder", {
+              await transport.request("/api/tasks/reorder", {
                 method: "POST",
                 json: { task_ids: rest.map((task) => task.id) },
               });
@@ -331,7 +340,7 @@ export function WorkspaceProvider({
         setTasks((current) => current.filter((item) => item.id !== id));
         setActiveTaskId((current) => (current === id ? null : current));
         try {
-          await apiRequest(`/api/tasks/${id}`, { method: "DELETE" });
+          await transport.request(`/api/tasks/${id}`, { method: "DELETE" });
           toast.success(`"${task?.title ?? "Tarefa"}" foi para a lixeira`, {
             action: { label: "Desfazer", onClick: () => void restoreTask(id) },
           });
@@ -346,7 +355,7 @@ export function WorkspaceProvider({
       async addAttachments(taskId, files) {
         for (const file of files) {
           try {
-            const { task } = await uploadFile<{ task: Task }>(`/api/tasks/${taskId}/attachments`, file);
+            const { task } = await transport.upload<{ task: Task }>(`/api/tasks/${taskId}/attachments`, file);
             replaceTask(task);
           } catch (error) {
             fail(error, `Não foi possível anexar ${file.name}.`);
@@ -364,7 +373,9 @@ export function WorkspaceProvider({
       },
 
       markAttachmentViewed(taskId, attachmentId) {
-        void fetch(`/api/tasks/${taskId}/attachments/${attachmentId}`, { method: "POST" });
+        void transport
+          .request(`/api/tasks/${taskId}/attachments/${attachmentId}`, { method: "POST" })
+          .catch(() => undefined);
       },
 
       async addSubtask(taskId, title) {
@@ -479,11 +490,11 @@ export function WorkspaceProvider({
       },
 
       async createNote(input, files = []) {
-        let { note } = await apiRequest<{ note: Note }>("/api/notes", { method: "POST", json: input });
+        let { note } = await transport.request<{ note: Note }>("/api/notes", { method: "POST", json: input });
         replaceNote(note);
         for (const file of files) {
           try {
-            ({ note } = await uploadFile<{ note: Note }>(`/api/notes/${note.id}/attachments`, file));
+            ({ note } = await transport.upload<{ note: Note }>(`/api/notes/${note.id}/attachments`, file));
             replaceNote(note);
           } catch (error) {
             fail(error, `Não foi possível anexar ${file.name}.`);
@@ -493,17 +504,17 @@ export function WorkspaceProvider({
       },
 
       async updateNote(id, input, files = [], removedAttachmentIds = []) {
-        let { note } = await apiRequest<{ note: Note }>(`/api/notes/${id}`, {
+        let { note } = await transport.request<{ note: Note }>(`/api/notes/${id}`, {
           method: "PATCH",
           json: input,
         });
         for (const attachmentId of removedAttachmentIds) {
-          ({ note } = await apiRequest<{ note: Note }>(`/api/notes/${id}/attachments/${attachmentId}`, {
+          ({ note } = await transport.request<{ note: Note }>(`/api/notes/${id}/attachments/${attachmentId}`, {
             method: "DELETE",
           }));
         }
         for (const file of files) {
-          ({ note } = await uploadFile<{ note: Note }>(`/api/notes/${id}/attachments`, file));
+          ({ note } = await transport.upload<{ note: Note }>(`/api/notes/${id}/attachments`, file));
         }
         replaceNote(note);
         return note;
@@ -514,7 +525,7 @@ export function WorkspaceProvider({
         const note = snapshot.find((item) => item.id === id);
         setNotes((current) => current.filter((item) => item.id !== id));
         try {
-          await apiRequest(`/api/notes/${id}`, { method: "DELETE" });
+          await transport.request(`/api/notes/${id}`, { method: "DELETE" });
           toast.success(`"${note?.title ?? "Anotação"}" foi para a lixeira`, {
             action: { label: "Desfazer", onClick: () => void restoreNote(id) },
           });
@@ -535,7 +546,7 @@ export function WorkspaceProvider({
           : null;
         replaceNote({ ...previous, is_pinned: isPinned, pinned_position: nextPosition });
         try {
-          const { note } = await apiRequest<{ note: Note }>(`/api/notes/${id}`, {
+          const { note } = await transport.request<{ note: Note }>(`/api/notes/${id}`, {
             method: "PATCH",
             json: { is_pinned: isPinned, pinned_position: nextPosition },
           });
@@ -555,7 +566,7 @@ export function WorkspaceProvider({
           }),
         );
         try {
-          await apiRequest("/api/notes/reorder", { method: "POST", json: { noteIds: ids } });
+          await transport.request("/api/notes/reorder", { method: "POST", json: { noteIds: ids } });
         } catch (error) {
           setNotes(snapshot);
           fail(error, "Não foi possível reordenar as fixadas.");
@@ -563,8 +574,8 @@ export function WorkspaceProvider({
       },
 
       async saveProfile({ removeAvatar, ...fields }, avatar) {
-        if (avatar) await uploadFile<{ profile: Profile }>("/api/profile/avatar", avatar);
-        const { profile } = await apiRequest<{ profile: Profile }>("/api/profile", {
+        if (avatar) await transport.upload<{ profile: Profile }>("/api/profile/avatar", avatar);
+        const { profile } = await transport.request<{ profile: Profile }>("/api/profile", {
           method: "PATCH",
           json: removeAvatar && !avatar ? { ...fields, avatar_url: null } : fields,
         });
@@ -573,19 +584,26 @@ export function WorkspaceProvider({
       },
 
       async loadTrash() {
-        return apiRequest<{ tasks: Task[]; notes: Note[] }>("/api/trash");
+        return transport.request<{ tasks: Task[]; notes: Note[] }>("/api/trash");
+      },
+
+      async signOut() {
+        if (transport.mode === "live") await createSupabaseBrowserClient().auth.signOut();
+        router.replace("/login");
+        router.refresh();
       },
     };
-  }, [enqueue, replaceNote, replaceTask, toast]);
+  }, [enqueue, replaceNote, replaceTask, router, toast, transport]);
 
   const data = useMemo<WorkspaceData>(
     () => ({
+      mode: transport.mode,
       tasks,
       notes,
       profile,
       email,
     }),
-    [email, notes, profile, tasks],
+    [email, notes, profile, tasks, transport.mode],
   );
 
   const ui = useMemo<WorkspaceUI>(

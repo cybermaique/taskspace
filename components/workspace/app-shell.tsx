@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { NotebookPen, Plus, Search, SquareKanban, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { FlaskConical, NotebookPen, Plus, Search, SquareKanban, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
@@ -195,12 +196,31 @@ function MobileNavButton({
   );
 }
 
+function DemoBanner() {
+  const { mode } = useWorkspace();
+  if (mode !== "demo") return null;
+
+  return (
+    <div className="flex items-center gap-2 border-b bg-brand-soft px-4 py-2 text-xs sm:px-6 lg:px-8">
+      <FlaskConical className="size-3.5 shrink-0 text-primary" />
+      <p className="min-w-0 flex-1">
+        <span className="font-medium">Modo demonstração.</span>{" "}
+        <span className="text-muted-foreground">Tudo funciona e fica salvo apenas neste navegador.</span>
+      </p>
+      <Link href="/login" className="shrink-0 font-medium text-primary hover:underline">
+        Criar conta
+      </Link>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh">
       <Sidebar />
       <div className="app-backdrop flex min-w-0 flex-1 flex-col">
         <MobileTopBar />
+        <DemoBanner />
         <main className="min-w-0 flex-1 pb-[calc(5rem+var(--safe-bottom))] lg:pb-0">{children}</main>
       </div>
       <MobileNav />
