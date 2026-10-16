@@ -1,27 +1,37 @@
-import { AccessGate } from "@/components/access-gate";
-import { DashboardDataLoader } from "@/components/dashboard-data-loader";
+import { redirect } from "next/navigation";
+
+import { Workspace } from "@/components/workspace/workspace";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth";
 import { listNotes } from "@/lib/notes";
 import { listTasks } from "@/lib/tasks";
-import type { Note } from "@/types/note";
-import type { Task } from "@/types/task";
 
-async function getInitialData() {
-  try {
-    const [tasks, notes] = await Promise.all([listTasks(), listNotes()]);
-    return { tasks, notes };
-  } catch {
-    return { tasks: [] as Task[], notes: [] as Note[] };
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; task?: string }>;
+}) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const [{ view, task }, tasks, notes, profile] = await Promise.all([
+    searchParams,
+    listTasks(),
+    listNotes(),
+    getCurrentProfile(),
+  ]);
+
+  if (!profile) {
+    throw new Error("Não foi possível carregar seu perfil.");
   }
-}
 
-export default async function HomePage() {
-  const { tasks, notes } = await getInitialData();
   return (
-    <AccessGate>
-      <DashboardDataLoader
-        initialTasks={tasks}
-        initialNotes={notes}
-      />
-    </AccessGate>
+    <Workspace
+      initialTasks={tasks}
+      initialNotes={notes}
+      initialProfile={profile}
+      initialView={view === "notes" ? "notes" : "tasks"}
+      initialTaskId={typeof task === "string" ? task : null}
+      email={user.email ?? null}
+    />
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -18,8 +20,8 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  destructive?: boolean;
   onConfirm: () => void | Promise<void>;
-  loading?: boolean;
 }
 
 export function ConfirmDialog({
@@ -27,38 +29,34 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Excluir",
+  confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
+  destructive = true,
   onConfirm,
-  loading = false,
 }: ConfirmDialogProps) {
+  const [loading, setLoading] = useState(false);
+
   const handleConfirm = async () => {
-    await onConfirm();
-    onOpenChange(false);
+    setLoading(true);
+    try {
+      await onConfirm();
+      onOpenChange(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="w-[calc(100vw-2rem)] max-w-sm rounded-2xl bg-white p-5 dark:bg-zinc-950"
-        showCloseButton={false}
-      >
-        <DialogHeader className="items-center text-center">
-          <span className="app-danger-icon mx-auto grid size-12 place-items-center rounded-full bg-rose-500/10 text-rose-500 dark:bg-rose-500/15">
-            <AlertTriangle className="size-6" />
-          </span>
-          <DialogTitle className="text-base font-semibold">
-            {title}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-slate-500 dark:text-white/50">
-            {description}
-          </DialogDescription>
+    <Dialog open={open} onOpenChange={(next) => !loading && onOpenChange(next)}>
+      <DialogContent className="max-w-sm" showCloseButton={false}>
+        <DialogHeader className="pr-0">
+          <DialogTitle className="text-base">{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="-mx-5 -mb-5 flex-row gap-2 rounded-b-2xl border-slate-900/10 bg-slate-50/80 px-5 py-3 dark:border-white/10 dark:bg-white/[0.04]">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
-            className="h-11 flex-1 rounded-full px-4 sm:h-8"
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
@@ -66,12 +64,13 @@ export function ConfirmDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
-            className="h-11 flex-1 rounded-full px-4 sm:h-8"
-            onClick={handleConfirm}
+            variant={destructive ? "destructive" : "default"}
+            onClick={() => void handleConfirm()}
             disabled={loading}
+            autoFocus
           >
-            {loading ? "Excluindo…" : confirmLabel}
+            {loading ? <Loader2 className="animate-spin" /> : null}
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
