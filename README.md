@@ -4,7 +4,7 @@
 
 Organizador pessoal de tarefas e anotações: quadro Kanban com arrastar e soltar (mouse, toque e teclado), painel de detalhes com edição inline, anotações com #tags e paleta de comandos. Feito com Next.js 16, React 19 e Supabase.
 
-**[Experimente a demonstração →](https://taskodoro-iota.vercel.app/demo)** sem criar conta: o app completo com dados de exemplo, salvos só no seu navegador.
+**[Experimente a demonstração →](https://taskspace-maique.vercel.app/demo)** sem criar conta: o app completo com dados de exemplo, salvos só no seu navegador.
 
 ![Quadro de tarefas no tema claro](docs/screenshots/board-light.png)
 
