@@ -5,33 +5,41 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { CheckCircle2, AlertTriangle, Info, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 
-import { useSensoryEffects } from "@/components/sensory-effects";
-
-/* ── types ─────────────────────────────────────────────── */
+import { cn } from "@/lib/utils";
 
 type ToastVariant = "success" | "error" | "warning" | "info";
 
-interface ToastItem {
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+interface ToastOptions {
+  action?: ToastAction;
+  duration?: number;
+}
+
+interface ToastItem extends ToastOptions {
   id: number;
   variant: ToastVariant;
   message: string;
 }
 
-interface ToastContextValue {
-  toast: (variant: ToastVariant, message: string) => void;
-  success: (message: string) => void;
-  error: (message: string) => void;
-  warning: (message: string) => void;
-  info: (message: string) => void;
-}
+type ToastFn = (message: string, options?: ToastOptions) => void;
 
-/* ── context ───────────────────────────────────────────── */
+interface ToastContextValue {
+  success: ToastFn;
+  error: ToastFn;
+  warning: ToastFn;
+  info: ToastFn;
+}
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
@@ -41,136 +49,103 @@ export function useToast() {
   return ctx;
 }
 
-/* ── styling ───────────────────────────────────────────── */
-
-const variantStyles: Record<
-  ToastVariant,
-  { container: string; icon: ReactNode }
-> = {
-  success: {
-    container:
-      "border-emerald-500/30 bg-emerald-50 text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-950/80 dark:text-emerald-100",
-    icon: <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />,
-  },
-  error: {
-    container:
-      "border-rose-500/30 bg-rose-50 text-rose-900 dark:border-rose-400/25 dark:bg-rose-950/80 dark:text-rose-100",
-    icon: <XCircle className="size-5 shrink-0 text-rose-500" />,
-  },
-  warning: {
-    container:
-      "border-amber-500/30 bg-amber-50 text-amber-900 dark:border-amber-400/25 dark:bg-amber-950/80 dark:text-amber-100",
-    icon: <AlertTriangle className="size-5 shrink-0 text-amber-500" />,
-  },
-  info: {
-    container:
-      "border-sky-500/30 bg-sky-50 text-sky-900 dark:border-sky-400/25 dark:bg-sky-950/80 dark:text-sky-100",
-    icon: <Info className="size-5 shrink-0 text-sky-500" />,
-  },
+const icons: Record<ToastVariant, ReactNode> = {
+  success: <CheckCircle2 className="size-4 text-status-done" />,
+  error: <XCircle className="size-4 text-destructive" />,
+  warning: <AlertTriangle className="size-4 text-status-waiting" />,
+  info: <Info className="size-4 text-status-progress" />,
 };
 
-const TOAST_DURATION_MS = 4000;
-const TOAST_ANIMATION_MS = 300;
+const DEFAULT_DURATION_MS = 4000;
+const EXIT_MS = 200;
 
-/* ── individual toast ──────────────────────────────────── */
-
-function Toast({
-  item,
-  onDismiss,
-}: {
-  item: ToastItem;
-  onDismiss: (id: number) => void;
-}) {
+function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
   const [exiting, setExiting] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [paused, setPaused] = useState(false);
+  const remainingRef = useRef(item.duration ?? (item.action ? 6500 : DEFAULT_DURATION_MS));
 
   const dismiss = useCallback(() => {
     setExiting(true);
-    setTimeout(() => onDismiss(item.id), TOAST_ANIMATION_MS);
+    window.setTimeout(() => onDismiss(item.id), EXIT_MS);
   }, [item.id, onDismiss]);
 
   useEffect(() => {
-    timerRef.current = setTimeout(dismiss, TOAST_DURATION_MS);
+    if (paused) return;
+    const startedAt = Date.now();
+    const timer = window.setTimeout(dismiss, remainingRef.current);
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      window.clearTimeout(timer);
+      remainingRef.current -= Date.now() - startedAt;
     };
-  }, [dismiss]);
-
-  const style = variantStyles[item.variant];
+  }, [dismiss, paused]);
 
   return (
     <div
-      role="alert"
-      className={[
-        "app-toast-enter pointer-events-auto relative flex min-w-72 max-w-sm items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all",
-        style.container,
-        exiting
-          ? "translate-y-2 scale-95 opacity-0"
-          : "translate-y-0 scale-100 opacity-100",
-      ].join(" ")}
-      style={{ transitionDuration: `${TOAST_ANIMATION_MS}ms` }}
+      role={item.variant === "error" ? "alert" : "status"}
+      onPointerEnter={() => setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+      className={cn(
+        "pointer-events-auto flex w-full items-center gap-3 rounded-xl border bg-popover py-2.5 pr-2 pl-3.5 text-sm text-popover-foreground shadow-lifted transition-all duration-200 sm:w-auto sm:max-w-sm sm:min-w-72",
+        exiting ? "translate-y-2 opacity-0" : "animate-rise",
+      )}
     >
-      <span className="app-toast-icon">{style.icon}</span>
-      <p className="min-w-0 flex-1 break-words text-sm font-medium [overflow-wrap:anywhere]">
-        {item.message}
-      </p>
+      <span className="shrink-0">{icons[item.variant]}</span>
+      <p className="min-w-0 flex-1 font-medium [overflow-wrap:anywhere]">{item.message}</p>
+      {item.action ? (
+        <button
+          type="button"
+          onClick={() => {
+            item.action?.onClick();
+            dismiss();
+          }}
+          className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-brand-soft"
+        >
+          {item.action.label}
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={dismiss}
-        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-black/10 dark:hover:bg-white/15"
-        aria-label="Fechar"
+        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        aria-label="Fechar notificação"
       >
         <X className="size-3.5" />
       </button>
-      <span
-        className={`app-toast-timer app-toast-timer-${item.variant}`}
-        aria-hidden="true"
-      />
     </div>
   );
 }
-
-/* ── provider ──────────────────────────────────────────── */
 
 let nextId = 1;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const { playSound } = useSensoryEffects();
-
-  const addToast = useCallback((variant: ToastVariant, message: string) => {
-    const id = nextId++;
-    setToasts((current) => [...current, { id, variant, message }]);
-    playSound(
-      variant === "success"
-        ? "success"
-        : variant === "error"
-          ? "error"
-          : variant === "warning"
-            ? "warning"
-            : "click",
-    );
-  }, [playSound]);
 
   const dismissToast = useCallback((id: number) => {
-    setToasts((current) => current.filter((t) => t.id !== id));
+    setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const ctx: ToastContextValue = {
-    toast: addToast,
-    success: useCallback((msg: string) => addToast("success", msg), [addToast]),
-    error: useCallback((msg: string) => addToast("error", msg), [addToast]),
-    warning: useCallback((msg: string) => addToast("warning", msg), [addToast]),
-    info: useCallback((msg: string) => addToast("info", msg), [addToast]),
-  };
+  const ctx = useMemo<ToastContextValue>(() => {
+    const add =
+      (variant: ToastVariant): ToastFn =>
+      (message, options) =>
+        setToasts((current) => [
+          ...current.slice(-3),
+          { id: nextId++, variant, message, ...options },
+        ]);
+    return {
+      success: add("success"),
+      error: add("error"),
+      warning: add("warning"),
+      info: add("info"),
+    };
+  }, []);
 
   return (
     <ToastContext.Provider value={ctx}>
       {children}
-      {/* toast viewport */}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col-reverse items-end gap-2 sm:bottom-6 sm:right-6"
+        className="pointer-events-none fixed inset-x-3 bottom-[calc(4.5rem+var(--safe-bottom))] z-[100] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:items-end lg:bottom-5"
       >
         {toasts.map((item) => (
           <Toast key={item.id} item={item} onDismiss={dismissToast} />
