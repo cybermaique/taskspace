@@ -67,9 +67,14 @@ test("arrasta um card para outra coluna", async ({ page, isMobile }) => {
 test("move um card pelo teclado", async ({ page, isMobile }) => {
   test.skip(isMobile, "Arraste por teclado é um recurso de desktop.");
   const title = "Planejar viagem para Lisboa";
+  // Keyboard listeners attach only after the drag activates, so pressing keys
+  // back-to-back races on slow CI. Wait for activation and for the announcement.
+  const liveRegion = page.locator("[id^=DndLiveRegion]");
   await card(page, title).focus();
   await page.keyboard.press("Space");
+  await expect(page.locator("[data-dragging=true]")).toHaveCount(1);
   await page.keyboard.press("ArrowRight");
+  await expect(liveRegion).toContainText("na coluna Em andamento");
   await page.keyboard.press("Space");
 
   await expect(column(page, "Em andamento").getByRole("button", { name: title, exact: true })).toBeVisible();
