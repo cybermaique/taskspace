@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   return {
     title: translate(locale, "Demonstração"),
-    description: translate(locale, "Explore o Taskboard sem criar conta. Os dados ficam apenas no seu navegador."),
+    description: translate(locale, "Explore o Taskspace sem criar conta. Os dados ficam apenas no seu navegador."),
   };
 }
 
