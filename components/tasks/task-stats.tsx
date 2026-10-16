@@ -3,10 +3,12 @@
 import { useMemo } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
-import { formatShortDate } from "@/lib/format";
+
 import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 const DAY_MS = 86_400_000;
 
@@ -72,6 +74,8 @@ function StatTile({
 
 /** 14-day completion sparkline: past days de-emphasized, today in the accent. */
 function CompletionSparkline({ days }: { days: Array<{ start: number; count: number }> }) {
+  const { formatShortDate } = useFormat();
+  const { t } = useI18n();
   const max = Math.max(1, ...days.map((day) => day.count));
   const height = 32;
 
@@ -79,12 +83,12 @@ function CompletionSparkline({ days }: { days: Array<{ start: number; count: num
     <div
       className="flex h-8 items-end gap-0.5"
       role="img"
-      aria-label={`Conclusões nos últimos 14 dias: ${days.map((day) => day.count).join(", ")}`}
+      aria-label={t("Conclusões nos últimos 14 dias: {counts}", { counts: days.map((day) => day.count).join(", ") })}
     >
       {days.map((day, index) => {
         const isToday = index === days.length - 1;
         const barHeight = day.count ? Math.max(4, (day.count / max) * height) : 2;
-        const label = `${isToday ? "Hoje" : formatShortDate(new Date(day.start).toISOString())}: ${day.count} ${day.count === 1 ? "concluída" : "concluídas"}`;
+        const label = `${isToday ? t("Hoje") : formatShortDate(new Date(day.start).toISOString())}: ${day.count} ${day.count === 1 ? t("concluída") : t("concluídas")}`;
         return (
           <Tooltip key={day.start} content={label} side="top">
             <span className="flex h-full w-[7px] cursor-default items-end">
@@ -105,20 +109,21 @@ function CompletionSparkline({ days }: { days: Array<{ start: number; count: num
 }
 
 export function TaskStats({ tasks }: { tasks: Task[] }) {
+  const { t } = useI18n();
   const stats = useStats(tasks);
   const hydrated = useHydrated();
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
-      <StatTile label="A fazer" value={stats.open} dot="bg-status-todo" />
-      <StatTile label="Em andamento" value={stats.inProgress} dot="bg-status-progress" />
-      <StatTile label="Aguardando" value={stats.waiting} dot="bg-status-waiting" />
-      <StatTile label="Concluídas · 7 dias" value={hydrated ? stats.thisWeek : 0} dot="bg-status-done">
+      <StatTile label={t("A fazer")} value={stats.open} dot="bg-status-todo" />
+      <StatTile label={t("Em andamento")} value={stats.inProgress} dot="bg-status-progress" />
+      <StatTile label={t("Aguardando")} value={stats.waiting} dot="bg-status-waiting" />
+      <StatTile label={t("Concluídas · 7 dias")} value={hydrated ? stats.thisWeek : 0} dot="bg-status-done">
         <div className={cn("flex items-end gap-2", !hydrated && "invisible")}>
           {stats.delta !== 0 ? (
             <span
               className="hidden rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-muted-foreground tabular-nums sm:inline"
-              title={`${Math.abs(stats.delta)} ${stats.delta > 0 ? "a mais" : "a menos"} que nos 7 dias anteriores`}
+              title={t(stats.delta > 0 ? "{count} a mais que nos 7 dias anteriores" : "{count} a menos que nos 7 dias anteriores", { count: Math.abs(stats.delta) })}
             >
               {stats.delta > 0 ? "▲" : "▼"} {Math.abs(stats.delta)}
             </span>

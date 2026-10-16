@@ -8,11 +8,14 @@ import { ContextMenu, ContextMenuTrigger, Menu, MenuContent, MenuItem, MenuSepar
 import { useToast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useWorkspaceActions, useWorkspaceUI } from "@/components/workspace/workspace-provider";
-import { formatShortDate } from "@/lib/format";
+
 import { cn } from "@/lib/utils";
 import type { Note } from "@/types/note";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 function NoteMenuContent({ note }: { note: Note }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const { setNoteEditor } = useWorkspaceUI();
   const toast = useToast();
@@ -20,28 +23,22 @@ function NoteMenuContent({ note }: { note: Note }) {
   return (
     <MenuContent className="w-48" align="end">
       <MenuItem onClick={() => setNoteEditor({ mode: "edit", noteId: note.id })}>
-        <Pencil />
-        Editar
-      </MenuItem>
+        <Pencil />{t("Editar")}</MenuItem>
       <MenuItem onClick={() => void actions.togglePin(note.id)}>
         {note.is_pinned ? <PinOff /> : <Pin />}
-        {note.is_pinned ? "Desafixar" : "Fixar no topo"}
+        {note.is_pinned ? t("Desafixar") : t("Fixar no topo")}
       </MenuItem>
       <MenuItem
         onClick={() =>
           void navigator.clipboard
             .writeText(toPlainText(note.content))
-            .then(() => toast.success("Conteúdo copiado"))
+            .then(() => toast.success(t("Conteúdo copiado")))
         }
       >
-        <Copy />
-        Copiar conteúdo
-      </MenuItem>
+        <Copy />{t("Copiar conteúdo")}</MenuItem>
       <MenuSeparator />
       <MenuItem destructive onClick={() => void actions.deleteNote(note.id)}>
-        <Trash2 />
-        Excluir
-      </MenuItem>
+        <Trash2 />{t("Excluir")}</MenuItem>
     </MenuContent>
   );
 }
@@ -72,6 +69,8 @@ export const NoteCard = memo(
     },
     ref,
   ) {
+  const { formatShortDate } = useFormat();
+  const { t } = useI18n();
     const actions = useWorkspaceActions();
     const { setNoteEditor } = useWorkspaceUI();
     const tags = extractHashtags(note.content);
@@ -113,7 +112,7 @@ export const NoteCard = memo(
                   "inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
                   note.is_pinned && "text-primary",
                 )}
-                aria-label={note.is_pinned ? "Desafixar anotação" : "Fixar anotação"}
+                aria-label={note.is_pinned ? t("Desafixar anotação") : t("Fixar anotação")}
               >
                 <Pin className={cn("size-3.5", note.is_pinned && "fill-current")} />
               </button>
@@ -123,7 +122,7 @@ export const NoteCard = memo(
                 onClick={(event) => event.stopPropagation()}
                 onPointerDown={(event) => event.stopPropagation()}
                 className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground"
-                aria-label={`Ações de ${note.title}`}
+                aria-label={t("Ações de {name}", { name: note.title })}
               >
                 <Ellipsis className="size-4" />
               </MenuTrigger>

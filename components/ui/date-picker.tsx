@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/components/i18n-provider";
 
-const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
-  month: "long",
-  year: "numeric",
-});
-const displayFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-});
+function useCalendarFormat() {
+  const { locale } = useI18n();
+  return useMemo(() => {
+    const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
+    const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
+    return {
+      weekdays: Array.from({ length: 7 }, (_, index) => weekdayFormatter.format(new Date(Date.UTC(2026, 0, 4 + index))).replace(".", "")),
+      displayFormatter: new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }),
+      formatMonthYear: (date: Date) => monthFormatter.format(date),
+    };
+  }, [locale]);
+}
 const CALENDAR_PANEL_WIDTH = 352;
 const CALENDAR_PANEL_HEIGHT = 360;
 const RANGE_PANEL_WIDTH = 288;
@@ -26,10 +29,6 @@ type CalendarPlacement = {
   vertical: "top" | "bottom";
   horizontal: "start" | "end";
 };
-
-function formatMonthYear(date: Date) {
-  return monthFormatter.format(date).replace(/\s+de\s+/i, " ");
-}
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -64,6 +63,8 @@ export function DatePicker({
   placeholder?: string;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
+  const { weekdays, displayFormatter, formatMonthYear } = useCalendarFormat();
   const selectedDate = parseDate(value);
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<CalendarPlacement>({
@@ -173,7 +174,7 @@ export function DatePicker({
       >
         <CalendarDays className="size-4 shrink-0 text-primary" />
         <span className={selectedDate ? "truncate" : "truncate text-muted-foreground"}>
-          {selectedDate ? displayFormatter.format(selectedDate) : placeholder}
+          {selectedDate ? displayFormatter.format(selectedDate) : t(placeholder)}
         </span>
         <ChevronDown className={["ml-auto size-4 shrink-0 text-muted-foreground transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
@@ -182,27 +183,27 @@ export function DatePicker({
         <div
           ref={popoverRef}
           role="dialog"
-          aria-label={placeholder}
+          aria-label={t(placeholder)}
           className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] rounded-xl border bg-popover p-3 text-popover-foreground shadow-lifted"
           style={{ top: placement.top, left: placement.left }}
         >
           <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Calendário</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">{t("Calendário")}</p>
               <p className="mt-0.5 text-sm font-semibold capitalize">{formatMonthYear(visibleMonth)}</p>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Mês anterior">
+              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label={t("Mês anterior")}>
                 <ChevronLeft className="size-4" />
               </button>
-              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Próximo mês">
+              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label={t("Próximo mês")}>
                 <ChevronRight className="size-4" />
               </button>
             </div>
           </div>
 
           <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
-            {WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
+            {weekdays.map((day) => <span key={day}>{day}</span>)}
           </div>
           <div className="mt-2 grid grid-cols-7 gap-1">
             {calendarDays.map((date, index) => date ? (
@@ -227,12 +228,8 @@ export function DatePicker({
 
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
             <button type="button" onClick={() => { onChange(null); setOpen(false); }} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive" disabled={!value}>
-              <X className="size-3.5" />
-              Limpar
-            </button>
-            <button type="button" onClick={() => { const current = startOfDay(new Date()); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); selectDate(current); }} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">
-              Hoje
-            </button>
+              <X className="size-3.5" />{t("Limpar")}</button>
+            <button type="button" onClick={() => { const current = startOfDay(new Date()); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); selectDate(current); }} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">{t("Hoje")}</button>
           </div>
         </div>,
         document.body,
@@ -254,6 +251,8 @@ export function DateRangePicker({
   placeholder?: string;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
+  const { weekdays, displayFormatter, formatMonthYear } = useCalendarFormat();
   const fromDate = parseDate(from);
   const toDate = parseDate(to);
   const [open, setOpen] = useState(false);
@@ -334,8 +333,8 @@ export function DateRangePicker({
   const dateLabel = fromDate && toDate
     ? `${displayFormatter.format(fromDate)} – ${displayFormatter.format(toDate)}`
     : fromDate
-      ? `${displayFormatter.format(fromDate)} – selecionar fim`
-      : placeholder;
+      ? t("{date} – selecionar fim", { date: displayFormatter.format(fromDate) })
+      : t(placeholder);
 
   return (
     <div ref={rootRef} className="relative min-w-0">
@@ -362,22 +361,22 @@ export function DateRangePicker({
         <div
           ref={popoverRef}
           role="dialog"
-          aria-label={placeholder}
+          aria-label={t(placeholder)}
           className="fixed z-[9999] max-h-[calc(100dvh-1rem)] w-[min(18rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border bg-popover p-2 text-popover-foreground shadow-lifted"
           style={{ top: placement.top, left: placement.left }}
         >
           <div className="flex items-center justify-between gap-1.5 border-b border-border pb-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Período</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">{t("Período")}</p>
               <p className="mt-0.5 text-xs font-semibold capitalize">{formatMonthYear(visibleMonth)}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{fromDate && !toDate ? "Agora selecione o fim" : "Selecione o início"}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{fromDate && !toDate ? t("Agora selecione o fim") : t("Selecione o início")}</p>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Mês anterior"><ChevronLeft className="size-4" /></button>
-              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label="Próximo mês"><ChevronRight className="size-4" /></button>
+              <button type="button" onClick={() => moveMonth(-1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label={t("Mês anterior")}><ChevronLeft className="size-4" /></button>
+              <button type="button" onClick={() => moveMonth(1)} className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground" aria-label={t("Próximo mês")}><ChevronRight className="size-4" /></button>
             </div>
           </div>
-          <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
+          <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
           <div className="mt-1 grid grid-cols-7 gap-0.5">
             {calendarDays.map((date, index) => {
               if (!date) return <span key={`empty-${index}`} aria-hidden="true" />;
@@ -399,8 +398,8 @@ export function DateRangePicker({
             })}
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-            <button type="button" onClick={() => { onChange("", ""); setOpen(false); }} disabled={!from && !to} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"><X className="size-3.5" />Limpar</button>
-            <button type="button" onClick={() => { const current = startOfDay(new Date()); const value = toIsoDate(current); onChange(value, value); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); setOpen(false); }} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">Hoje</button>
+            <button type="button" onClick={() => { onChange("", ""); setOpen(false); }} disabled={!from && !to} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"><X className="size-3.5" />{t("Limpar")}</button>
+            <button type="button" onClick={() => { const current = startOfDay(new Date()); const value = toIsoDate(current); onChange(value, value); setVisibleMonth(new Date(current.getFullYear(), current.getMonth(), 1)); setOpen(false); }} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">{t("Hoje")}</button>
           </div>
         </div>,
         document.body,

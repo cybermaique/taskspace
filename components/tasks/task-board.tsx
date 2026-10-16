@@ -34,6 +34,7 @@ import { resolveDrop, type BoardColumns } from "@/lib/ordering";
 import { STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 import { TASK_STATUSES, type CreateTaskInput, type Task, type TaskStatus } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 const COLLAPSED_LIMIT = 15;
 
@@ -93,6 +94,7 @@ function BoardColumn({
   defaults: Partial<CreateTaskInput>;
   onOpen: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const { openCreateTask } = useWorkspaceUI();
   const [expanded, setExpanded] = useState(false);
@@ -103,18 +105,18 @@ function BoardColumn({
   return (
     <section
       className="flex w-[min(85vw,20rem)] shrink-0 snap-start flex-col lg:w-auto lg:min-w-60 lg:flex-1"
-      aria-label={meta.label}
+      aria-label={t(meta.label)}
     >
       <header className="flex h-9 items-center gap-2 px-1">
         <meta.icon className={cn("size-4", meta.tone)} />
-        <h2 className="text-sm font-medium">{meta.label}</h2>
+        <h2 className="text-sm font-medium">{t(meta.label)}</h2>
         <span className="text-xs text-muted-foreground tabular-nums">{ids.length}</span>
-        <Tooltip content={`Nova tarefa em ${meta.label}`}>
+        <Tooltip content={t("Nova tarefa em {status}", { status: t(meta.label) })}>
           <Button
             variant="ghost"
             size="icon-xs"
             className="ml-auto"
-            aria-label={`Nova tarefa em ${meta.label}`}
+            aria-label={t("Nova tarefa em {status}", { status: t(meta.label) })}
             onClick={() => openCreateTask(status)}
           >
             <Plus />
@@ -139,14 +141,12 @@ function BoardColumn({
         </SortableContext>
 
         {ids.length === 0 ? (
-          <p className="grid flex-1 place-items-center rounded-xl border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-            Solte uma tarefa aqui
-          </p>
+          <p className="grid flex-1 place-items-center rounded-xl border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">{t("Solte uma tarefa aqui")}</p>
         ) : null}
 
         {collapsible ? (
           <Button variant="ghost" size="sm" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? "Mostrar menos" : `Mostrar mais ${ids.length - COLLAPSED_LIMIT}`}
+            {expanded ? t("Mostrar menos") : t("Mostrar mais {count}", { count: ids.length - COLLAPSED_LIMIT })}
           </Button>
         ) : null}
 
@@ -165,6 +165,7 @@ export function TaskBoard({
   compact: boolean;
   defaults: Partial<CreateTaskInput>;
 }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const { openTask } = useWorkspaceUI();
   const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
@@ -214,12 +215,12 @@ export function TaskBoard({
   const activeTask = activeId ? tasksById.get(activeId) : undefined;
 
   // Screen reader announcements use titles and column names, never raw ids.
-  const title = (id: UniqueIdentifier) => `"${tasksById.get(String(id))?.title ?? "tarefa"}"`;
+  const title = (id: UniqueIdentifier) => `"${tasksById.get(String(id))?.title ?? t("tarefa")}"`;
   const describe = (id: UniqueIdentifier) => {
     const status = TASK_STATUSES.find((item) => item === id);
-    if (status) return `a coluna ${STATUS_META[status].label}`;
+    if (status) return t("a coluna {status}", { status: t(STATUS_META[status].label) });
     const task = tasksById.get(String(id));
-    return task ? `${title(id)}, na coluna ${STATUS_META[task.status].label}` : "uma área";
+    return task ? t("{title}, na coluna {status}", { title: title(id), status: t(STATUS_META[task.status].label) }) : t("uma área");
   };
 
   return (
@@ -234,15 +235,15 @@ export function TaskBoard({
       accessibility={{
         screenReaderInstructions: {
           draggable:
-            "Para mover uma tarefa, pressione espaço. Use as setas para mudar de posição ou coluna e espaço para soltar. Esc cancela.",
+            t("Para mover uma tarefa, pressione espaço. Use as setas para mudar de posição ou coluna e espaço para soltar. Esc cancela."),
         },
         announcements: {
-          onDragStart: ({ active }) => `Tarefa ${title(active.id)} selecionada.`,
+          onDragStart: ({ active }) => t("Tarefa {title} selecionada.", { title: title(active.id) }),
           onDragOver: ({ active, over }) =>
-            over ? `${title(active.id)} sobre ${describe(over.id)}.` : `${title(active.id)} fora de uma coluna.`,
+            over ? t("{title} sobre {area}.", { title: title(active.id), area: describe(over.id) }) : t("{title} fora de uma coluna.", { title: title(active.id) }),
           onDragEnd: ({ active, over }) =>
-            over ? `${title(active.id)} solta em ${describe(over.id)}.` : `${title(active.id)} solta.`,
-          onDragCancel: ({ active }) => `Movimento cancelado. ${title(active.id)} voltou ao lugar.`,
+            over ? t("{title} solta em {area}.", { title: title(active.id), area: describe(over.id) }) : t("{title} solta.", { title: title(active.id) }),
+          onDragCancel: ({ active }) => t("Movimento cancelado. {title} voltou ao lugar.", { title: title(active.id) }),
         },
       }}
     >

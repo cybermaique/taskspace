@@ -23,9 +23,11 @@ import {
   useWorkspaceUI,
 } from "@/components/workspace/workspace-provider";
 import { errorMessage } from "@/lib/api-client";
-import { formatDateTime } from "@/lib/format";
+
 import { cn } from "@/lib/utils";
 import type { Note, NoteAttachment } from "@/types/note";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 const noteAttachmentUrl = (attachment: NoteAttachment) =>
   `/api/notes/${attachment.note_id}/attachments/${attachment.id}`;
@@ -39,6 +41,8 @@ function NoteViewer({
   onEdit: () => void;
   bodyRef: RefObject<HTMLDivElement | null>;
 }) {
+  const { formatDateTime } = useFormat();
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const { setNoteEditor } = useWorkspaceUI();
   const toast = useToast();
@@ -51,42 +55,41 @@ function NoteViewer({
       <div className="flex shrink-0 flex-col gap-3 border-b px-5 py-4 pr-14 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <DialogTitle className="text-lg break-words">{note.title}</DialogTitle>
-          <DialogDescription className="mt-1 text-xs">
-            Criada em {formatDateTime(note.created_at)}
-            {updated ? ` · editada em ${formatDateTime(note.updated_at)}` : ""}
+          <DialogDescription className="mt-1 text-xs">{t("Criada em")}{" "}{formatDateTime(note.created_at)}
+            {updated ? ` ${t("· editada em {date}", { date: formatDateTime(note.updated_at) })}` : ""}
           </DialogDescription>
         </div>
         <div className="-ml-2 flex shrink-0 items-center gap-0.5 sm:ml-0">
-          <Tooltip content={note.is_pinned ? "Desafixar" : "Fixar"}>
+          <Tooltip content={note.is_pinned ? t("Desafixar") : "Fixar"}>
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={() => void actions.togglePin(note.id)}
-              aria-label={note.is_pinned ? "Desafixar" : "Fixar"}
+              aria-label={note.is_pinned ? t("Desafixar") : t("Fixar")}
               className={cn(note.is_pinned && "text-primary")}
             >
               <Pin className={cn(note.is_pinned && "fill-current")} />
             </Button>
           </Tooltip>
-          <Tooltip content="Copiar conteúdo">
+          <Tooltip content={t("Copiar conteúdo")}>
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Copiar conteúdo"
+              aria-label={t("Copiar conteúdo")}
               onClick={() =>
                 void navigator.clipboard
                   .writeText(toPlainText(note.content))
-                  .then(() => toast.success("Conteúdo copiado"))
+                  .then(() => toast.success(t("Conteúdo copiado")))
               }
             >
               <Copy />
             </Button>
           </Tooltip>
-          <Tooltip content="Excluir">
+          <Tooltip content={t("Excluir")}>
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Excluir"
+              aria-label={t("Excluir")}
               className="hover:text-destructive"
               onClick={() => {
                 setNoteEditor(null);
@@ -97,16 +100,14 @@ function NoteViewer({
             </Button>
           </Tooltip>
           <Button variant="outline" size="sm" className="ml-1" onClick={onEdit}>
-            <Pencil />
-            Editar
-          </Button>
+            <Pencil />{t("Editar")}</Button>
         </div>
       </div>
       <div ref={bodyRef} tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto px-5 py-5 outline-none">
         <RichText content={note.content} className="text-[0.9375rem]" />
         {attachments.length ? (
           <div className="mt-6">
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">Anexos</p>
+            <p className="mb-2 text-xs font-semibold text-muted-foreground">{t("Anexos")}</p>
             <AttachmentGrid attachments={attachments} urlFor={noteAttachmentUrl} onOpen={setViewerIndex} />
           </div>
         ) : null}
@@ -131,6 +132,7 @@ function NoteForm({
   onDone: (saved?: Note) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const toast = useToast();
   const [title, setTitle] = useState(note?.title ?? "");
@@ -158,10 +160,10 @@ function NoteForm({
       const saved = note
         ? await actions.updateNote(note.id, input, files, removedIds)
         : await actions.createNote(input, files);
-      toast.success(note ? "Anotação salva" : "Anotação criada");
+      toast.success(note ? t("Anotação salva") : t("Anotação criada"));
       onDone(saved);
     } catch (error) {
-      toast.error(errorMessage(error, "Não foi possível salvar a anotação."));
+      toast.error(errorMessage(error, t("Não foi possível salvar a anotação.")));
     } finally {
       setSaving(false);
     }
@@ -178,14 +180,14 @@ function NoteForm({
       }}
     >
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pt-5 pb-4">
-        <DialogTitle className="sr-only">{note ? "Editar anotação" : "Nova anotação"}</DialogTitle>
-        <DialogDescription className="sr-only">Título e conteúdo da anotação.</DialogDescription>
+        <DialogTitle className="sr-only">{note ? t("Editar anotação") : t("Nova anotação")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("Título e conteúdo da anotação.")}</DialogDescription>
         <input
           autoFocus={!note}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Título"
-          aria-label="Título"
+          placeholder={t("Título")}
+          aria-label={t("Título")}
           maxLength={160}
           disabled={saving}
           className="w-full pr-8 bg-transparent text-xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/60"
@@ -197,7 +199,7 @@ function NoteForm({
           onSubmit={() => void save()}
           onPasteFiles={(pasted) => setFiles((current) => [...current, ...pasted])}
           disabled={saving}
-          placeholder="Escreva livremente… use #tags, cole links ou digite /code e /json para blocos de código."
+          placeholder={t("Escreva livremente… use #tags, cole links ou digite /code e /json para blocos de código.")}
           className="min-h-56 border-transparent bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0"
         />
         {existing.length ? (
@@ -222,7 +224,7 @@ function NoteForm({
                     type="button"
                     onClick={() => setFiles((current) => current.filter((_, item) => item !== index))}
                     className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-                    aria-label={`Remover ${file.name}`}
+                    aria-label={t("Remover {name}", { name: file.name })}
                   >
                     <X className="size-3" />
                   </button>
@@ -233,12 +235,10 @@ function NoteForm({
         </FileDropZone>
       </div>
       <div className="flex items-center justify-end gap-2 border-t bg-subtle/60 px-5 py-3">
-        <Button variant="ghost" size="sm" onClick={() => onDone()} disabled={saving}>
-          Cancelar
-        </Button>
+        <Button variant="ghost" size="sm" onClick={() => onDone()} disabled={saving}>{t("Cancelar")}</Button>
         <Button size="sm" onClick={() => void save()} disabled={!valid || !dirty || saving}>
           {saving ? <LoaderCircle className="animate-spin" /> : null}
-          {note ? "Salvar" : "Criar anotação"}
+          {note ? t("Salvar") : t("Criar anotação")}
           <Kbd className="hidden border-primary-foreground/30 sm:inline-flex">Ctrl ↵</Kbd>
         </Button>
       </div>
@@ -247,6 +247,7 @@ function NoteForm({
 }
 
 export function NoteEditorDialog() {
+  const { t } = useI18n();
   const { notes } = useWorkspace();
   const { noteEditor, setNoteEditor } = useWorkspaceUI();
   const [dirty, setDirty] = useState(false);
@@ -307,10 +308,10 @@ export function NoteEditorDialog() {
       <ConfirmDialog
         open={confirmClose}
         onOpenChange={setConfirmClose}
-        title="Descartar alterações?"
-        description="O que você escreveu nesta anotação ainda não foi salvo."
-        confirmLabel="Descartar"
-        cancelLabel="Continuar editando"
+        title={t("Descartar alterações?")}
+        description={t("O que você escreveu nesta anotação ainda não foi salvo.")}
+        confirmLabel={t("Descartar")}
+        cancelLabel={t("Continuar editando")}
         onConfirm={close}
       />
     </>

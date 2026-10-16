@@ -15,9 +15,11 @@ import { useToast } from "@/components/ui/toast";
 import { useWorkspaceActions, useWorkspaceUI } from "@/components/workspace/workspace-provider";
 import { PRIORITY_META, STATUS_META } from "@/lib/task-meta";
 import { TASK_PRIORITIES, TASK_STATUSES, type Task } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 /** Shared action list for a task's "more" button and its right-click menu. */
 export function TaskMenuContent({ task }: { task: Task }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const { openTask } = useWorkspaceUI();
   const toast = useToast();
@@ -25,14 +27,10 @@ export function TaskMenuContent({ task }: { task: Task }) {
   return (
     <MenuContent className="w-52">
       <MenuItem onClick={() => openTask(task.id)}>
-        <ArrowUpRight />
-        Abrir
-      </MenuItem>
+        <ArrowUpRight />{t("Abrir")}</MenuItem>
       <MenuSub>
         <MenuSubTrigger>
-          <MoveRight />
-          Mover para
-        </MenuSubTrigger>
+          <MoveRight />{t("Mover para")}</MenuSubTrigger>
         <MenuContent side="right" align="start" sideOffset={4} className="w-48">
           <MenuRadioGroup
             value={task.status}
@@ -43,7 +41,7 @@ export function TaskMenuContent({ task }: { task: Task }) {
               return (
                 <MenuRadioItem key={status} value={status}>
                   <meta.icon className={meta.tone} />
-                  {meta.label}
+                  {t(meta.label)}
                 </MenuRadioItem>
               );
             })}
@@ -52,9 +50,7 @@ export function TaskMenuContent({ task }: { task: Task }) {
       </MenuSub>
       <MenuSub>
         <MenuSubTrigger>
-          <Flag />
-          Prioridade
-        </MenuSubTrigger>
+          <Flag />{t("Prioridade")}</MenuSubTrigger>
         <MenuContent side="right" align="start" sideOffset={4} className="w-40">
           <MenuRadioGroup
             value={task.priority}
@@ -67,7 +63,7 @@ export function TaskMenuContent({ task }: { task: Task }) {
               return (
                 <MenuRadioItem key={priority} value={priority}>
                   <meta.icon className={meta.tone} />
-                  {meta.label}
+                  {t(meta.label)}
                 </MenuRadioItem>
               );
             })}
@@ -78,17 +74,13 @@ export function TaskMenuContent({ task }: { task: Task }) {
         onClick={() =>
           void navigator.clipboard
             .writeText(task.description ? `${task.title}\n\n${task.description}` : task.title)
-            .then(() => toast.success("Tarefa copiada"))
+            .then(() => toast.success(t("Tarefa copiada")))
         }
       >
-        <Copy />
-        Copiar texto
-      </MenuItem>
+        <Copy />{t("Copiar texto")}</MenuItem>
       <MenuSeparator />
       <MenuItem destructive onClick={() => void actions.deleteTask(task.id)}>
-        <Trash2 />
-        Excluir
-      </MenuItem>
+        <Trash2 />{t("Excluir")}</MenuItem>
     </MenuContent>
   );
 }

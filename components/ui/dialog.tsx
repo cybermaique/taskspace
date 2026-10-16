@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/components/i18n-provider";
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -39,6 +40,7 @@ function DialogOverlay({
 }
 
 function DialogCloseButton({ className }: { className?: string }) {
+  const { t } = useI18n();
   return (
     <DialogPrimitive.Close
       data-slot="dialog-close"
@@ -48,7 +50,7 @@ function DialogCloseButton({ className }: { className?: string }) {
       )}
     >
       <XIcon className="size-4" />
-      <span className="sr-only">Fechar</span>
+      <span className="sr-only">{t("Fechar")}</span>
     </DialogPrimitive.Close>
   )
 }

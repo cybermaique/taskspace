@@ -24,11 +24,16 @@ import { GripVertical, Plus, X } from "lucide-react";
 import { restrictToVerticalAxis } from "@/components/tasks/dnd-modifiers";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useWorkspaceActions } from "@/components/workspace/workspace-provider";
-import { formatDateTime } from "@/lib/format";
+
 import { cn } from "@/lib/utils";
 import type { Subtask, Task } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useSortableAccessibility } from "@/lib/use-sortable-accessibility";
+import { useFormat } from "@/lib/use-format";
 
 function SubtaskRow({ taskId, subtask }: { taskId: string; subtask: Subtask }) {
+  const { formatDateTime } = useFormat();
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(subtask.title);
@@ -55,7 +60,7 @@ function SubtaskRow({ taskId, subtask }: { taskId: string; subtask: Subtask }) {
         ref={setActivatorNodeRef}
         type="button"
         className="inline-flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity group-hover/subtask:opacity-100 focus-visible:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100"
-        aria-label={`Reordenar ${subtask.title}`}
+        aria-label={t("Reordenar {name}", { name: subtask.title })}
         {...attributes}
         {...listeners}
       >
@@ -87,8 +92,8 @@ function SubtaskRow({ taskId, subtask }: { taskId: string; subtask: Subtask }) {
           onDoubleClick={() => setEditing(true)}
           title={
             subtask.is_completed && subtask.completed_at
-              ? `Concluída em ${formatDateTime(subtask.completed_at)} · duplo clique para editar`
-              : "Duplo clique para editar"
+              ? t("Concluída em {date} · duplo clique para editar", { date: formatDateTime(subtask.completed_at) })
+              : t("Duplo clique para editar")
           }
           className={cn(
             "min-w-0 flex-1 cursor-text py-1 text-sm break-words",
@@ -102,7 +107,7 @@ function SubtaskRow({ taskId, subtask }: { taskId: string; subtask: Subtask }) {
         type="button"
         onClick={() => void actions.deleteSubtask(taskId, subtask.id)}
         className="inline-flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover/subtask:opacity-100 hover:text-destructive focus-visible:opacity-100 pointer-coarse:opacity-100"
-        aria-label={`Excluir ${subtask.title}`}
+        aria-label={t("Excluir {name}", { name: subtask.title })}
       >
         <X className="size-3.5" />
       </button>
@@ -111,6 +116,8 @@ function SubtaskRow({ taskId, subtask }: { taskId: string; subtask: Subtask }) {
 }
 
 export function TaskSubtasks({ task }: { task: Task }) {
+  const { t } = useI18n();
+  const accessibility = useSortableAccessibility(task.subtasks);
   const actions = useWorkspaceActions();
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
@@ -165,6 +172,7 @@ export function TaskSubtasks({ task }: { task: Task }) {
         collisionDetection={closestCenter}
         modifiers={[restrictToVerticalAxis]}
         onDragEnd={handleDragEnd}
+        accessibility={accessibility}
       >
         <SortableContext items={task.subtasks.map((subtask) => subtask.id)} strategy={verticalListSortingStrategy}>
           <ul className="-mx-1 space-y-0.5">
@@ -188,8 +196,8 @@ export function TaskSubtasks({ task }: { task: Task }) {
           onChange={(event) => setDraft(event.target.value)}
           disabled={adding}
           maxLength={200}
-          placeholder="Adicionar subtarefa e pressionar Enter"
-          aria-label="Nova subtarefa"
+          placeholder={t("Adicionar subtarefa e pressionar Enter")}
+          aria-label={t("Nova subtarefa")}
           className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:opacity-60"
         />
       </form>

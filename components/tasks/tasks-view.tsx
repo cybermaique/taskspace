@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/workspace/app-shell";
 import { useWorkspace, useWorkspaceUI } from "@/components/workspace/workspace-provider";
 import { useHydrated } from "@/lib/use-hydrated";
 import type { CreateTaskInput, TaskView } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 const SCOPE_DEFAULTS: Record<TaskView, Partial<CreateTaskInput>> = {
   all: { category: "trabalho", type: "feature" },
@@ -29,6 +30,7 @@ function greeting(hour: number) {
 }
 
 export function TasksView() {
+  const { t } = useI18n();
   const { tasks, profile } = useWorkspace();
   const { openCreateTask } = useWorkspaceUI();
   const hydrated = useHydrated();
@@ -42,13 +44,13 @@ export function TasksView() {
   return (
     <div className="mx-auto w-full max-w-[110rem]">
       <PageHeader
-        title="Tarefas"
+        title={t("Tarefas")}
         description={
           <>
-            {hydrated ? greeting(new Date().getHours()) : "Olá"}, {firstName}.{" "}
+            {hydrated ? t(greeting(new Date().getHours())) : t("Olá")}, {firstName}.{" "}
             {inProgress
-              ? `${inProgress} ${inProgress === 1 ? "tarefa em andamento" : "tarefas em andamento"}.`
-              : "Nada em andamento agora."}
+              ? `${inProgress} ${inProgress === 1 ? t("tarefa em andamento") : t("tarefas em andamento")}.`
+              : t("Nada em andamento agora.")}
           </>
         }
       />
@@ -63,21 +65,15 @@ export function TasksView() {
             <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary">
               <SquareKanban className="size-6" />
             </span>
-            <h2 className="mt-4 text-base font-semibold">Seu quadro está vazio</h2>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Crie a primeira tarefa e organize o fluxo arrastando entre as colunas.
-            </p>
+            <h2 className="mt-4 text-base font-semibold">{t("Seu quadro está vazio")}</h2>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">{t("Crie a primeira tarefa e organize o fluxo arrastando entre as colunas.")}</p>
             <Button className="mt-5" onClick={() => openCreateTask()}>
-              <Plus />
-              Criar tarefa
-            </Button>
+              <Plus />{t("Criar tarefa")}</Button>
           </div>
         ) : filtered.length === 0 && activeCount > 0 ? (
           <div className="grid place-items-center rounded-2xl border border-dashed px-6 py-14 text-center">
-            <p className="text-sm font-medium">Nenhuma tarefa com esses filtros</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={reset}>
-              Limpar filtros
-            </Button>
+            <p className="text-sm font-medium">{t("Nenhuma tarefa com esses filtros")}</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={reset}>{t("Limpar filtros")}</Button>
           </div>
         ) : layout === "board" ? (
           <TaskBoard tasks={filtered} compact={compact} defaults={defaults} />

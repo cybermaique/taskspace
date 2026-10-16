@@ -34,6 +34,8 @@ import {
 import { pluralize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/types/note";
+import { useI18n } from "@/components/i18n-provider";
+import { useSortableAccessibility } from "@/lib/use-sortable-accessibility";
 
 export const NOTE_SEARCH_INPUT_ID = "note-search";
 
@@ -92,6 +94,8 @@ function PinnedNotes({
   activeTag: string | null;
   onTagClick: (tag: string) => void;
 }) {
+  const { t } = useI18n();
+  const accessibility = useSortableAccessibility(notes);
   const actions = useWorkspaceActions();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -113,10 +117,8 @@ function PinnedNotes({
   return (
     <section>
       <h2 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        <Pin className="size-3.5" />
-        Fixadas
-      </h2>
-      <DndContext id="pinned-notes" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <Pin className="size-3.5" />{t("Fixadas")}</h2>
+      <DndContext id="pinned-notes" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={accessibility}>
         <SortableContext items={notes.map((note) => note.id)} strategy={rectSortingStrategy}>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {notes.map((note) => (
@@ -136,6 +138,7 @@ function PinnedNotes({
 }
 
 export function NotesView() {
+  const { t } = useI18n();
   const { notes, profile } = useWorkspace();
   const { setNoteEditor } = useWorkspaceUI();
   const [search, setSearch] = useState("");
@@ -164,8 +167,8 @@ export function NotesView() {
   return (
     <div className="mx-auto w-full max-w-[110rem]">
       <PageHeader
-        title="Anotações"
-        description={`${pluralize(notes.length, "anotação", "anotações")} no seu espaço. Use #tags para organizar.`}
+        title={t("Anotações")}
+        description={t("{notes} no seu espaço. Use #tags para organizar.", { notes: pluralize(notes.length, t("anotação"), t("anotações")) })}
       />
 
       <div className="space-y-5 px-4 pt-5 sm:px-6 lg:px-8">
@@ -183,8 +186,8 @@ export function NotesView() {
                     event.currentTarget.blur();
                   }
                 }}
-                placeholder="Buscar em títulos e conteúdo…"
-                aria-label="Buscar anotações"
+                placeholder={t("Buscar em títulos e conteúdo…")}
+                aria-label={t("Buscar anotações")}
                 className="h-8 w-full rounded-lg border border-input bg-card pr-3 pl-8 text-base shadow-soft outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 sm:text-[0.8125rem]"
               />
             </label>
@@ -193,7 +196,7 @@ export function NotesView() {
                 from={range.from || null}
                 to={range.to || null}
                 onChange={(from, to) => setRange({ from, to })}
-                placeholder="Criadas em…"
+                placeholder={t("Criadas em…")}
                 compact
               />
             </div>
@@ -208,9 +211,7 @@ export function NotesView() {
                   setRange({ from: "", to: "" });
                 }}
               >
-                <X />
-                Limpar
-                <span className="text-muted-foreground tabular-nums">· {filtered.length}</span>
+                <X />{t("Limpar")}<span className="text-muted-foreground tabular-nums">· {filtered.length}</span>
               </Button>
             ) : null}
           </div>
@@ -244,19 +245,13 @@ export function NotesView() {
             <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary">
               <NotebookPen className="size-6" />
             </span>
-            <h2 className="mt-4 text-base font-semibold">Nenhuma anotação ainda</h2>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Guarde ideias, links e trechos de código. Fixe as mais importantes no topo.
-            </p>
+            <h2 className="mt-4 text-base font-semibold">{t("Nenhuma anotação ainda")}</h2>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">{t("Guarde ideias, links e trechos de código. Fixe as mais importantes no topo.")}</p>
             <Button className="mt-5" onClick={() => setNoteEditor({ mode: "create" })}>
-              <Plus />
-              Nova anotação
-            </Button>
+              <Plus />{t("Nova anotação")}</Button>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="rounded-2xl border border-dashed px-6 py-14 text-center text-sm text-muted-foreground">
-            Nenhuma anotação encontrada para esse filtro.
-          </p>
+          <p className="rounded-2xl border border-dashed px-6 py-14 text-center text-sm text-muted-foreground">{t("Nenhuma anotação encontrada para esse filtro.")}</p>
         ) : (
           <>
             {pinned.length ? (
@@ -265,9 +260,7 @@ export function NotesView() {
             {others.length ? (
               <section>
                 {pinned.length ? (
-                  <h2 className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    Outras
-                  </h2>
+                  <h2 className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t("Outras")}</h2>
                 ) : null}
                 <div className="columns-1 gap-3 pb-4 sm:columns-2 xl:columns-3 2xl:columns-4">
                   {others.map((note) => (

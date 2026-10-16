@@ -1,10 +1,10 @@
-# Taskboard
+# Taskspace
 
-[![CI](https://github.com/cybermaique/taskodoro/actions/workflows/ci.yml/badge.svg)](https://github.com/cybermaique/taskodoro/actions/workflows/ci.yml)
+[![CI](https://github.com/cybermaique/taskspace/actions/workflows/ci.yml/badge.svg)](https://github.com/cybermaique/taskspace/actions/workflows/ci.yml)
 
 Organizador pessoal de tarefas e anotações: quadro Kanban com arrastar e soltar (mouse, toque e teclado), painel de detalhes com edição inline, anotações com #tags e paleta de comandos. Feito com Next.js 16, React 19 e Supabase.
 
-**[Experimente a demonstração →](https://taskodoro.vercel.app/demo)** sem criar conta: o app completo com dados de exemplo, salvos só no seu navegador.
+**[Experimente a demonstração →](https://taskodoro-iota.vercel.app/demo)** sem criar conta: o app completo com dados de exemplo, salvos só no seu navegador.
 
 ![Quadro de tarefas no tema claro](docs/screenshots/board-light.png)
 
@@ -30,6 +30,13 @@ Organizador pessoal de tarefas e anotações: quadro Kanban com arrastar e solta
 - **Ações otimistas** com rollback: mover, concluir e excluir respondem na hora; excluir oferece "Desfazer"
 - Indicadores do quadro com conclusões dos últimos 14 dias
 - Temas claro, escuro e conforto, cor de destaque por usuário e densidade compacta
+- **Português, inglês e espanhol**, com seletor no login, na navegação e nas preferências; idioma salvo por um ano neste navegador
+
+### Idiomas
+
+A interface, as datas, o calendário, as notificações e as validações acompanham o idioma escolhido. Português é o padrão. A preferência fica no cookie `taskspace-locale`, compartilhado entre login, conta e demonstração; tarefas, anotações e categorias personalizadas mantêm o texto original. Não é necessária migration do Supabase.
+
+As traduções ficam em [`lib/i18n/messages.ts`](lib/i18n/messages.ts). O servidor lê o idioma do cookie e envia a mesma preferência ao provider React, mantendo o HTML inicial e a hidratação no mesmo idioma. A troca atualiza a interface e os metadados sem recarregar a página inteira.
 
 ## Decisões técnicas
 
@@ -101,7 +108,9 @@ O [CI](.github/workflows/ci.yml) roda tudo isso em cada PR. O job E2E usa a demo
 ## Rodando localmente
 
 ```bash
-npm install
+git clone https://github.com/cybermaique/taskspace.git
+cd taskspace
+npm ci
 npm run dev
 ```
 

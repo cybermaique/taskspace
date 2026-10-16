@@ -13,6 +13,7 @@ import {
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 
 type ToastVariant = "success" | "error" | "warning" | "info";
 
@@ -60,6 +61,7 @@ const DEFAULT_DURATION_MS = 4000;
 const EXIT_MS = 200;
 
 function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
+  const { t } = useI18n();
   const [exiting, setExiting] = useState(false);
   const [paused, setPaused] = useState(false);
   const remainingRef = useRef(item.duration ?? (item.action ? 6500 : DEFAULT_DURATION_MS));
@@ -90,7 +92,7 @@ function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) =
       )}
     >
       <span className="shrink-0">{icons[item.variant]}</span>
-      <p className="min-w-0 flex-1 font-medium [overflow-wrap:anywhere]">{item.message}</p>
+      <p className="min-w-0 flex-1 font-medium [overflow-wrap:anywhere]">{t(item.message)}</p>
       {item.action ? (
         <button
           type="button"
@@ -100,14 +102,14 @@ function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) =
           }}
           className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-brand-soft"
         >
-          {item.action.label}
+          {t(item.action.label)}
         </button>
       ) : null}
       <button
         type="button"
         onClick={dismiss}
         className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        aria-label="Fechar notificação"
+        aria-label={t("Fechar notificação")}
       >
         <X className="size-3.5" />
       </button>
