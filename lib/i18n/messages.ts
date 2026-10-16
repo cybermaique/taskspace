@@ -3,7 +3,7 @@ export const messages = {
   "Idioma": ["Language", "Idioma"],
   "Organizador pessoal de tarefas e anotações.": ["Personal task and notes organizer.", "Organizador personal de tareas y notas."],
   "Demonstração": ["Demo", "Demostración"],
-  "Explore o Taskboard sem criar conta. Os dados ficam apenas no seu navegador.": ["Explore Taskboard without an account. Data stays in your browser.", "Explora Taskboard sin crear una cuenta. Los datos se guardan solo en tu navegador."],
+  "Explore o Taskspace sem criar conta. Os dados ficam apenas no seu navegador.": ["Explore Taskspace without an account. Data stays in your browser.", "Explora Taskspace sin crear una cuenta. Los datos se guardan solo en tu navegador."],
   "Tarefas": ["Tasks", "Tareas"],
   "Tarefa": ["Task", "Tarea"],
   "tarefa": ["task", "tarea"],
