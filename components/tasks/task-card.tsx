@@ -6,10 +6,12 @@ import { Ellipsis, MessageSquare, Paperclip } from "lucide-react";
 import { previewText } from "@/components/rich-text";
 import { TaskMenuContent } from "@/components/tasks/task-menu";
 import { ContextMenu, ContextMenuTrigger, Menu, MenuTrigger } from "@/components/ui/menu";
-import { formatShortDate } from "@/lib/format";
+
 import { getSubtaskProgress, getTypeMeta, PRIORITY_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 import { getTaskCategoryLabel, type Task } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 function ProgressRing({ percent }: { percent: number }) {
   const radius = 5;
@@ -33,39 +35,40 @@ function ProgressRing({ percent }: { percent: number }) {
 }
 
 export function TaskMeta({ task, compact = false }: { task: Task; compact?: boolean }) {
+  const { t, locale } = useI18n();
   const type = getTypeMeta(task.type);
   const priority = PRIORITY_META[task.priority];
   const progress = getSubtaskProgress(task);
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-      <span className="inline-flex items-center gap-1" title={`Prioridade ${priority.label.toLowerCase()}`}>
+      <span className="inline-flex items-center gap-1" title={t("Prioridade {priority}", { priority: t(priority.label).toLowerCase() })}>
         <priority.icon className={cn("size-3.5", priority.tone)} />
-        {!compact ? priority.label : null}
+        {!compact ? t(priority.label) : null}
       </span>
       <span className="inline-flex items-center gap-1">
         <type.icon className={cn("size-3.5", type.tone)} />
-        {type.label}
+        {t(type.label)}
       </span>
       {task.category && !compact ? (
         <span className="truncate rounded-md bg-muted px-1.5 py-px text-[0.7rem] font-medium">
-          {getTaskCategoryLabel(task.category)}
+          {getTaskCategoryLabel(task.category, locale)}
         </span>
       ) : null}
       {progress.total ? (
-        <span className="inline-flex items-center gap-1 tabular-nums" title="Subtarefas concluídas">
+        <span className="inline-flex items-center gap-1 tabular-nums" title={t("Subtarefas concluídas")}>
           <ProgressRing percent={progress.percent} />
           {progress.done}/{progress.total}
         </span>
       ) : null}
       {task.attachments.length ? (
-        <span className="inline-flex items-center gap-0.5 tabular-nums" title="Anexos">
+        <span className="inline-flex items-center gap-0.5 tabular-nums" title={t("Anexos")}>
           <Paperclip className="size-3.5" />
           {task.attachments.length}
         </span>
       ) : null}
       {task.comments.length ? (
-        <span className="inline-flex items-center gap-0.5 tabular-nums" title="Comentários">
+        <span className="inline-flex items-center gap-0.5 tabular-nums" title={t("Comentários")}>
           <MessageSquare className="size-3.5" />
           {task.comments.length}
         </span>
@@ -104,8 +107,10 @@ export const TaskCard = memo(
     },
     ref,
   ) {
+  const { formatShortDate } = useFormat();
+  const { t, locale } = useI18n();
     const isDone = task.status === "completed";
-    const description = !compact && task.description ? previewText(task.description, 140) : null;
+    const description = !compact && task.description ? previewText(task.description, 140, locale) : null;
 
     const card = (
       <div
@@ -168,7 +173,7 @@ export const TaskCard = memo(
                 "absolute right-1.5 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-hover/card:opacity-100 hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring data-popup-open:opacity-100 pointer-coarse:opacity-100",
                 compact ? "top-1.5" : "top-2",
               )}
-              aria-label={`Ações de ${task.title}`}
+              aria-label={t("Ações de {name}", { name: task.title })}
             >
               <Ellipsis className="size-4" />
             </MenuTrigger>

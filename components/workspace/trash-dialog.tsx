@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/components/ui/toast";
 import { useWorkspaceActions, useWorkspaceUI } from "@/components/workspace/workspace-provider";
 import { errorMessage } from "@/lib/api-client";
-import { formatDateTime } from "@/lib/format";
+
 import type { Note } from "@/types/note";
 import type { Task } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 interface TrashItem {
   id: string;
@@ -27,6 +29,8 @@ function toItems(tasks: Task[], notes: Note[]): TrashItem[] {
 }
 
 function TrashList() {
+  const { formatDateTime } = useFormat();
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const toast = useToast();
   const [items, setItems] = useState<TrashItem[] | null>(null);
@@ -40,12 +44,12 @@ function TrashList() {
       .catch((error) => {
         if (!active) return;
         setItems([]);
-        toast.error(errorMessage(error, "Não foi possível abrir a lixeira."));
+        toast.error(errorMessage(error, t("Não foi possível abrir a lixeira.")));
       });
     return () => {
       active = false;
     };
-  }, [actions, toast]);
+  }, [actions, t, toast]);
 
   const restore = async (item: TrashItem) => {
     setRestoring(item.id);
@@ -68,7 +72,7 @@ function TrashList() {
     return (
       <div className="grid place-items-center py-10 text-center">
         <Trash2 className="size-8 text-muted-foreground/50" />
-        <p className="mt-3 text-sm text-muted-foreground">A lixeira está vazia.</p>
+        <p className="mt-3 text-sm text-muted-foreground">{t("A lixeira está vazia.")}</p>
       </div>
     );
   }
@@ -83,13 +87,11 @@ function TrashList() {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{item.title}</p>
               <p className="text-xs text-muted-foreground">
-                {item.kind === "task" ? "Tarefa" : "Anotação"} · excluída em {formatDateTime(item.deletedAt)}
+                {item.kind === "task" ? t("Tarefa") : t("Anotação")}{" "}{t("· excluída em")}{" "}{formatDateTime(item.deletedAt)}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => void restore(item)} disabled={restoring === item.id}>
-              {restoring === item.id ? <LoaderCircle className="animate-spin" /> : <RotateCcw />}
-              Restaurar
-            </Button>
+              {restoring === item.id ? <LoaderCircle className="animate-spin" /> : <RotateCcw />}{t("Restaurar")}</Button>
           </li>
         );
       })}
@@ -98,13 +100,14 @@ function TrashList() {
 }
 
 export function TrashDialog() {
+  const { t } = useI18n();
   const { trashOpen, setTrashOpen } = useWorkspaceUI();
   return (
     <Dialog open={trashOpen} onOpenChange={setTrashOpen}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Lixeira</DialogTitle>
-          <DialogDescription>Itens excluídos ficam aqui até você restaurá-los.</DialogDescription>
+          <DialogTitle>{t("Lixeira")}</DialogTitle>
+          <DialogDescription>{t("Itens excluídos ficam aqui até você restaurá-los.")}</DialogDescription>
         </DialogHeader>
         {trashOpen ? <TrashList /> : null}
       </DialogContent>

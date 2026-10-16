@@ -4,6 +4,8 @@ import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Braces, Check, ChevronDown, Code2, Copy } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
+import { DEFAULT_LOCALE, translate, type Locale } from "@/lib/i18n";
 
 type Block =
   | { type: "text"; content: string }
@@ -143,6 +145,7 @@ export function CodeBlock({
   language: "code" | "json";
   collapsible?: boolean;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(!collapsible);
   const formatted = language === "json" ? formatJson(content) : null;
@@ -155,9 +158,9 @@ export function CodeBlock({
       <div className="flex h-9 items-center gap-2 border-b border-white/10 pr-1 pl-3 text-xs text-zinc-400">
         <Icon className="size-3.5" />
         <span className="font-medium text-zinc-300">
-          {language === "json" ? (formatted ? "JSON" : "JSON inválido") : "Código"}
+          {language === "json" ? (formatted ? "JSON" : t("JSON inválido")) : t("Código")}
         </span>
-        <span>· {lines} {lines === 1 ? "linha" : "linhas"}</span>
+        <span>· {lines} {lines === 1 ? t("linha") : t("linhas")}</span>
         <div className="ml-auto flex items-center">
           <button
             type="button"
@@ -169,7 +172,7 @@ export function CodeBlock({
               });
             }}
             className="inline-flex size-7 items-center justify-center rounded-md hover:bg-white/10 hover:text-zinc-100"
-            aria-label="Copiar código"
+            aria-label={t("Copiar código")}
           >
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
           </button>
@@ -181,7 +184,7 @@ export function CodeBlock({
                 setOpen((value) => !value);
               }}
               className="inline-flex size-7 items-center justify-center rounded-md hover:bg-white/10 hover:text-zinc-100"
-              aria-label={open ? "Recolher código" : "Expandir código"}
+              aria-label={open ? t("Recolher código") : t("Expandir código")}
               aria-expanded={open}
             >
               <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
@@ -232,9 +235,9 @@ export function RichText({
 }
 
 /** Single-line-friendly preview: no code blocks, links rendered as text. */
-export function previewText(content: string, maxLength = 220) {
+export function previewText(content: string, maxLength = 220, locale: Locale = DEFAULT_LOCALE) {
   const plain = content
-    .replace(/```(?:json|code)?[ \t]*\r?\n[\s\S]*?```/gi, " ⟨código⟩ ")
+    .replace(/```(?:json|code)?[ \t]*\r?\n[\s\S]*?```/gi, ` ⟨${translate(locale, "Código").toLowerCase()}⟩ `)
     .replace(/\s+/g, " ")
     .trim();
   return plain.length > maxLength ? `${plain.slice(0, maxLength).trimEnd()}…` : plain;

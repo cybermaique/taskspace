@@ -8,6 +8,7 @@ import { useWorkspaceActions } from "@/components/workspace/workspace-provider";
 import { errorMessage } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type { CreateTaskInput, TaskStatus } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 /** Inline "add a task" row at the bottom of a board column or list group. */
 export function QuickAdd({
@@ -19,6 +20,7 @@ export function QuickAdd({
   defaults: Partial<CreateTaskInput>;
   className?: string;
 }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -33,7 +35,7 @@ export function QuickAdd({
       await actions.createTask({ ...defaults, title: value, status });
       setTitle("");
     } catch (error) {
-      toast.error(errorMessage(error, "Não foi possível criar a tarefa."));
+      toast.error(errorMessage(error, t("Não foi possível criar a tarefa.")));
     } finally {
       setSaving(false);
     }
@@ -49,9 +51,7 @@ export function QuickAdd({
           className,
         )}
       >
-        <Plus className="size-4" />
-        Adicionar tarefa
-      </button>
+        <Plus className="size-4" />{t("Adicionar tarefa")}</button>
     );
   }
 
@@ -76,16 +76,14 @@ export function QuickAdd({
         onBlur={() => {
           if (!title.trim() && !saving) setOpen(false);
         }}
-        placeholder="Título da tarefa"
-        aria-label="Título da nova tarefa"
+        placeholder={t("Título da tarefa")}
+        aria-label={t("Título da nova tarefa")}
         className="w-full bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
       />
       <div className="mt-1 flex items-center justify-between px-1 text-[0.7rem] text-muted-foreground">
-        <span>Esc para cancelar</span>
+        <span>{t("Esc para cancelar")}</span>
         <span className="inline-flex items-center gap-1">
-          {saving ? <LoaderCircle className="size-3 animate-spin" /> : <CornerDownLeft className="size-3" />}
-          Enter para criar
-        </span>
+          {saving ? <LoaderCircle className="size-3 animate-spin" /> : <CornerDownLeft className="size-3" />}{t("Enter para criar")}</span>
       </div>
     </div>
   );

@@ -30,6 +30,7 @@ import {
 import { resetDemoState } from "@/lib/demo/demo-transport";
 import { STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 
 interface CommandItem {
   id: string;
@@ -50,6 +51,7 @@ function normalize(value: string) {
 }
 
 function PaletteBody({ onClose }: { onClose: () => void }) {
+  const { t, locale } = useI18n();
   const { tasks, notes, mode } = useWorkspace();
   const { signOut } = useWorkspaceActions();
   const ui = useWorkspaceUI();
@@ -66,27 +68,27 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
     const q = normalize(query.trim());
 
     const allCommands: CommandItem[] = [
-      { id: "new-task", group: "Ações", label: "Nova tarefa", icon: Plus, hint: <Kbd>C</Kbd>, run: run(() => ui.openCreateTask()) },
-      { id: "new-note", group: "Ações", label: "Nova anotação", icon: NotebookPen, run: run(() => ui.setNoteEditor({ mode: "create" })) },
-      { id: "go-tasks", group: "Ações", label: "Ir para Tarefas", icon: SquareKanban, hint: <Kbd>1</Kbd>, run: run(() => ui.setView("tasks")) },
-      { id: "go-notes", group: "Ações", label: "Ir para Anotações", icon: StickyNote, hint: <Kbd>2</Kbd>, run: run(() => ui.setView("notes")) },
+      { id: "new-task", group: t("Ações"), label: t("Nova tarefa"), icon: Plus, hint: <Kbd>C</Kbd>, run: run(() => ui.openCreateTask()) },
+      { id: "new-note", group: t("Ações"), label: t("Nova anotação"), icon: NotebookPen, run: run(() => ui.setNoteEditor({ mode: "create" })) },
+      { id: "go-tasks", group: t("Ações"), label: t("Ir para Tarefas"), icon: SquareKanban, hint: <Kbd>1</Kbd>, run: run(() => ui.setView("tasks")) },
+      { id: "go-notes", group: t("Ações"), label: t("Ir para Anotações"), icon: StickyNote, hint: <Kbd>2</Kbd>, run: run(() => ui.setView("notes")) },
       ...THEME_OPTIONS.map((option) => ({
         id: `theme-${option.value}`,
-        group: "Ações",
-        label: `Tema: ${option.label}`,
+        group: t("Ações"),
+        label: t("Tema: {theme}", { theme: t(option.label) }),
         keywords: "aparencia modo cor",
         icon: option.icon,
         run: run(() => setTheme(option.value)),
       })),
-      { id: "trash", group: "Ações", label: "Abrir lixeira", icon: Trash2, run: run(() => ui.setTrashOpen(true)) },
-      { id: "settings", group: "Ações", label: "Preferências", keywords: "perfil avatar cor apelido", icon: Settings2, run: run(() => ui.setSettingsOpen(true)) },
-      { id: "shortcuts", group: "Ações", label: "Atalhos de teclado", icon: Keyboard, hint: <Kbd>?</Kbd>, run: run(() => ui.setShortcutsOpen(true)) },
+      { id: "trash", group: t("Ações"), label: t("Abrir lixeira"), icon: Trash2, run: run(() => ui.setTrashOpen(true)) },
+      { id: "settings", group: t("Ações"), label: t("Preferências"), keywords: "perfil avatar cor apelido", icon: Settings2, run: run(() => ui.setSettingsOpen(true)) },
+      { id: "shortcuts", group: t("Ações"), label: t("Atalhos de teclado"), icon: Keyboard, hint: <Kbd>?</Kbd>, run: run(() => ui.setShortcutsOpen(true)) },
       ...(mode === "demo"
         ? [
             {
               id: "demo-reset",
-              group: "Ações",
-              label: "Restaurar dados da demonstração",
+              group: t("Ações"),
+              label: t("Restaurar dados da demonstração"),
               keywords: "reset demo exemplo",
               icon: RotateCcw,
               run: run(() => {
@@ -96,7 +98,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
             },
           ]
         : []),
-      { id: "logout", group: "Ações", label: "Sair", icon: LogOut, run: run(() => void signOut()) },
+      { id: "logout", group: t("Ações"), label: t("Sair"), icon: LogOut, run: run(() => void signOut()) },
     ];
     const commands = allCommands.filter(
       (item) => !q || normalize(`${item.label} ${item.keywords ?? ""}`).includes(q),
@@ -108,11 +110,11 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
         const meta = STATUS_META[task.status];
         return {
           id: `task-${task.id}`,
-          group: "Tarefas",
+          group: t("Tarefas"),
           label: task.title,
           icon: meta.icon,
           iconClass: meta.tone,
-          hint: <span className="text-xs text-muted-foreground">{meta.label}</span>,
+          hint: <span className="text-xs text-muted-foreground">{t(meta.label)}</span>,
           run: run(() => {
             ui.setView("tasks");
             ui.openTask(task.id);
@@ -125,10 +127,10 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       .slice(0, q ? 6 : 3)
       .map<CommandItem>((note) => ({
         id: `note-${note.id}`,
-        group: "Anotações",
+        group: t("Anotações"),
         label: note.title,
         icon: StickyNote,
-        hint: <span className="max-w-48 truncate text-xs text-muted-foreground">{previewText(note.content, 60)}</span>,
+        hint: <span className="max-w-48 truncate text-xs text-muted-foreground">{previewText(note.content, 60, locale)}</span>,
         run: run(() => {
           ui.setView("notes");
           ui.setNoteEditor({ mode: "view", noteId: note.id });
@@ -136,7 +138,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       }));
 
     return q ? [...matchedTasks, ...matchedNotes, ...commands] : [...commands.slice(0, 4), ...matchedTasks, ...matchedNotes, ...commands.slice(4)];
-  }, [mode, notes, onClose, query, setTheme, signOut, tasks, ui]);
+  }, [locale, mode, notes, onClose, query, setTheme, signOut, t, tasks, ui]);
 
   const safeIndex = Math.min(activeIndex, Math.max(0, items.length - 1));
 
@@ -151,8 +153,8 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <DialogTitle className="sr-only">Paleta de comandos</DialogTitle>
-      <DialogDescription className="sr-only">Busque tarefas, anotações e ações.</DialogDescription>
+      <DialogTitle className="sr-only">{t("Paleta de comandos")}</DialogTitle>
+      <DialogDescription className="sr-only">{t("Busque tarefas, anotações e ações.")}</DialogDescription>
       <div className="flex items-center gap-2 border-b px-4">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <input
@@ -174,8 +176,8 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
               items[safeIndex]?.run();
             }
           }}
-          placeholder="Buscar tarefas, anotações ou ações…"
-          aria-label="Buscar"
+          placeholder={t("Buscar tarefas, anotações ou ações…")}
+          aria-label={t("Buscar")}
           role="combobox"
           aria-expanded="true"
           aria-controls="command-list"
@@ -186,7 +188,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       </div>
       <div ref={listRef} id="command-list" role="listbox" className="max-h-[min(60dvh,26rem)] overflow-y-auto p-1.5">
         {items.length === 0 ? (
-          <p className="px-3 py-8 text-center text-sm text-muted-foreground">Nada encontrado para “{query}”.</p>
+          <p className="px-3 py-8 text-center text-sm text-muted-foreground">{t("Nada encontrado para “{query}”", { query })}.</p>
         ) : (
           items.map((item, index) => {
             const showGroup = item.group !== lastGroup;

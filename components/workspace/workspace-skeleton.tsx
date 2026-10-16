@@ -1,6 +1,10 @@
-export function WorkspaceSkeleton() {
+"use client";
+
+
+import { useI18n } from "@/components/i18n-provider";export function WorkspaceSkeleton() {
+  const { t } = useI18n();
   return (
-    <div className="flex min-h-dvh" aria-busy="true" aria-label="Carregando">
+    <div className="flex min-h-dvh" aria-busy="true" aria-label={t("Carregando")}>
       <div className="hidden w-64 shrink-0 border-r bg-sidebar p-4 lg:block">
         <div className="skeleton h-7 w-32 rounded-lg" />
         <div className="skeleton mt-6 h-9 rounded-lg" />

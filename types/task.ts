@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, translate, type Locale } from "@/lib/i18n";
+
 export const TASK_STATUSES = [
   "not_started",
   "in_progress",
@@ -75,8 +77,9 @@ export function getDefaultTaskType(category: string | null | undefined): TaskTyp
   return isPersonalCategory(category) ? "personal" : "feature";
 }
 
-export function getTaskCategoryLabel(category: string | null | undefined) {
-  return TASK_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? category;
+export function getTaskCategoryLabel(category: string | null | undefined, locale: Locale = DEFAULT_LOCALE) {
+  const option = TASK_CATEGORY_OPTIONS.find((option) => option.value === category);
+  return option ? translate(locale, option.label) : category;
 }
 
 export interface Subtask {

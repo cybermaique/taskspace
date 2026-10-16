@@ -19,6 +19,7 @@ import {
 import { PRIORITY_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 import { TASK_PRIORITIES, type TaskPriority, type TaskView } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 export const TASK_SEARCH_INPUT_ID = "task-search";
 
@@ -49,6 +50,7 @@ export function TaskToolbar({
   setLayout: (layout: TaskLayout) => void;
   resultCount: number;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-2.5">
       <div className="flex flex-wrap items-center gap-2">
@@ -64,8 +66,8 @@ export function TaskToolbar({
                 event.currentTarget.blur();
               }
             }}
-            placeholder="Filtrar tarefas…"
-            aria-label="Filtrar tarefas"
+            placeholder={t("Filtrar tarefas…")}
+            aria-label={t("Filtrar tarefas")}
             className="h-8 w-full rounded-lg border border-input bg-card pr-8 pl-8 text-base shadow-soft outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 sm:text-[0.8125rem]"
           />
           {filters.search ? (
@@ -73,7 +75,7 @@ export function TaskToolbar({
               type="button"
               onClick={() => setFilter("search", "")}
               className="absolute top-1/2 right-1.5 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-              aria-label="Limpar busca"
+              aria-label={t("Limpar busca")}
             >
               <X className="size-3.5" />
             </button>
@@ -91,22 +93,22 @@ export function TaskToolbar({
             }
           >
             <ListFilter />
-            {filters.priority === "all" ? "Prioridade" : PRIORITY_META[filters.priority].label}
+            {filters.priority === "all" ? t("Prioridade") : t(PRIORITY_META[filters.priority].label)}
           </MenuTrigger>
           <MenuContent className="w-44">
             <MenuGroup>
-              <MenuLabel>Prioridade</MenuLabel>
+              <MenuLabel>{t("Prioridade")}</MenuLabel>
               <MenuRadioGroup
                 value={filters.priority}
                 onValueChange={(value) => setFilter("priority", value as TaskPriority | "all")}
               >
-                <MenuRadioItem value="all">Todas</MenuRadioItem>
+                <MenuRadioItem value="all">{t("Todas")}</MenuRadioItem>
                 {[...TASK_PRIORITIES].reverse().map((priority) => {
                   const meta = PRIORITY_META[priority];
                   return (
                     <MenuRadioItem key={priority} value={priority}>
                       <meta.icon className={meta.tone} />
-                      {meta.label}
+                      {t(meta.label)}
                     </MenuRadioItem>
                   );
                 })}
@@ -120,7 +122,7 @@ export function TaskToolbar({
             from={filters.from || null}
             to={filters.to || null}
             onChange={setRange}
-            placeholder="Criadas em…"
+            placeholder={t("Criadas em…")}
             compact
           />
         </div>
@@ -128,33 +130,31 @@ export function TaskToolbar({
         <div className="ml-auto flex items-center gap-2">
           {activeCount > 0 ? (
             <Button variant="ghost" size="sm" onClick={reset}>
-              <X />
-              Limpar
-              <span className="text-muted-foreground tabular-nums">· {resultCount}</span>
+              <X />{t("Limpar")}<span className="text-muted-foreground tabular-nums">· {resultCount}</span>
             </Button>
           ) : null}
           <SegmentedControl
-            label="Modo de visualização"
+            label={t("Modo de visualização")}
             value={layout}
             onChange={setLayout}
             options={[
               {
                 value: "board",
-                title: "Quadro",
+                title: t("Quadro"),
                 label: (
                   <span className="inline-flex items-center gap-1.5">
                     <Columns3 className="size-4" />
-                    <span className="hidden md:inline">Quadro</span>
+                    <span className="hidden md:inline">{t("Quadro")}</span>
                   </span>
                 ),
               },
               {
                 value: "list",
-                title: "Lista",
+                title: t("Lista"),
                 label: (
                   <span className="inline-flex items-center gap-1.5">
                     <Rows3 className="size-4" />
-                    <span className="hidden md:inline">Lista</span>
+                    <span className="hidden md:inline">{t("Lista")}</span>
                   </span>
                 ),
               },
@@ -164,10 +164,10 @@ export function TaskToolbar({
       </div>
 
       <SegmentedControl
-        label="Escopo"
+        label={t("Escopo")}
         value={filters.scope}
         onChange={(scope) => setFilter("scope", scope)}
-        options={SCOPES}
+        options={SCOPES.map((option) => ({ ...option, label: t(option.label) }))}
         className="scrollbar-none max-w-full overflow-x-auto"
       />
     </div>

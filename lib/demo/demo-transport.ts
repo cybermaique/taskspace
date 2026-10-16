@@ -3,6 +3,8 @@
 import { createDemoServer, DemoHttpError } from "@/lib/demo/demo-server";
 import { createDemoState, type DemoState } from "@/lib/demo/seed";
 import type { RequestOptions, Transport } from "@/lib/transport";
+import { getBrowserLocale } from "@/lib/i18n/browser";
+import { translate } from "@/lib/i18n";
 
 const STORAGE_KEY = "taskboard:demo:v1";
 const LATENCY_MS = 180;
@@ -35,7 +37,7 @@ export function resetDemoState() {
 
 /** Serves the app's API from memory so the demo needs no account or database. */
 export function createDemoTransport(state: DemoState): Transport {
-  const server = createDemoServer(state);
+  const server = createDemoServer(state, getBrowserLocale);
   const respond = async <T>(method: string, url: string, body?: unknown) => {
     await new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
     try {
@@ -43,7 +45,7 @@ export function createDemoTransport(state: DemoState): Transport {
       saveDemoState(state);
       return result;
     } catch (error) {
-      if (error instanceof DemoHttpError) throw new Error(error.message);
+      if (error instanceof DemoHttpError) throw new Error(translate(getBrowserLocale(), error.message));
       throw error;
     }
   };

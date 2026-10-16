@@ -28,6 +28,7 @@ import type {
   TaskStatus,
   UpdateTaskInput,
 } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 export type WorkspaceView = "tasks" | "notes";
 
@@ -178,6 +179,7 @@ export function WorkspaceProvider({
   transport?: Transport;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const toast = useToast();
   const router = useRouter();
   const [tasks, setTasks] = useState(() => sortByPosition(initialTasks));
@@ -247,9 +249,9 @@ export function WorkspaceProvider({
     const restoreTask = async (id: string) => {
       try {
         await taskRequest(`/api/tasks/${id}/restore`, { method: "POST" });
-        toast.success("Tarefa restaurada");
+        toast.success(t("Tarefa restaurada"));
       } catch (error) {
-        fail(error, "Não foi possível restaurar a tarefa.");
+        fail(error, t("Não foi possível restaurar a tarefa."));
       }
     };
 
@@ -259,9 +261,9 @@ export function WorkspaceProvider({
           method: "POST",
         });
         replaceNote(note);
-        toast.success("Anotação restaurada");
+        toast.success(t("Anotação restaurada"));
       } catch (error) {
-        fail(error, "Não foi possível restaurar a anotação.");
+        fail(error, t("Não foi possível restaurar a anotação."));
       }
     };
 
@@ -277,7 +279,7 @@ export function WorkspaceProvider({
             ({ task } = await transport.upload<{ task: Task }>(`/api/tasks/${task.id}/attachments`, file));
             replaceTask(task);
           } catch (error) {
-            fail(error, `Não foi possível anexar ${file.name}.`);
+            fail(error, t("Não foi possível anexar {name}.", { name: file.name }));
           }
         }
         return task;
@@ -295,7 +297,7 @@ export function WorkspaceProvider({
           return Boolean(task);
         } catch (error) {
           replaceTask(previous);
-          fail(error, "Não foi possível atualizar a tarefa.");
+          fail(error, t("Não foi possível atualizar a tarefa."));
           return false;
         }
       },
@@ -329,7 +331,7 @@ export function WorkspaceProvider({
             }
           } catch (error) {
             setTasks(snapshot);
-            fail(error, "Não foi possível mover a tarefa.");
+            fail(error, t("Não foi possível mover a tarefa."));
           }
         });
       },
@@ -341,12 +343,12 @@ export function WorkspaceProvider({
         setActiveTaskId((current) => (current === id ? null : current));
         try {
           await transport.request(`/api/tasks/${id}`, { method: "DELETE" });
-          toast.success(`"${task?.title ?? "Tarefa"}" foi para a lixeira`, {
-            action: { label: "Desfazer", onClick: () => void restoreTask(id) },
+          toast.success(t("\"{name}\" foi para a lixeira", { name: task?.title ?? t("Tarefa") }), {
+            action: { label: t("Desfazer"), onClick: () => void restoreTask(id) },
           });
         } catch (error) {
           setTasks(snapshot);
-          fail(error, "Não foi possível excluir a tarefa.");
+          fail(error, t("Não foi possível excluir a tarefa."));
         }
       },
 
@@ -358,7 +360,7 @@ export function WorkspaceProvider({
             const { task } = await transport.upload<{ task: Task }>(`/api/tasks/${taskId}/attachments`, file);
             replaceTask(task);
           } catch (error) {
-            fail(error, `Não foi possível anexar ${file.name}.`);
+            fail(error, t("Não foi possível anexar {name}.", { name: file.name }));
           }
         }
       },
@@ -366,9 +368,9 @@ export function WorkspaceProvider({
       async deleteAttachment(taskId, attachmentId) {
         try {
           await taskRequest(`/api/tasks/${taskId}/attachments/${attachmentId}`, { method: "DELETE" });
-          toast.success("Anexo removido");
+          toast.success(t("Anexo removido"));
         } catch (error) {
-          fail(error, "Não foi possível remover o anexo.");
+          fail(error, t("Não foi possível remover o anexo."));
         }
       },
 
@@ -383,7 +385,7 @@ export function WorkspaceProvider({
           await taskRequest(`/api/tasks/${taskId}/subtasks`, { method: "POST", json: { title } });
           return true;
         } catch (error) {
-          fail(error, "Não foi possível criar a subtarefa.");
+          fail(error, t("Não foi possível criar a subtarefa."));
           return false;
         }
       },
@@ -400,7 +402,7 @@ export function WorkspaceProvider({
         replaceTask(optimistic);
         if (done && optimistic.subtasks.every((subtask) => subtask.is_completed)) {
           celebrate();
-          toast.success("Todas as subtarefas concluídas!");
+          toast.success(t("Todas as subtarefas concluídas!"));
         }
         try {
           await taskRequest(`/api/subtasks/${subtaskId}`, {
@@ -409,7 +411,7 @@ export function WorkspaceProvider({
           });
         } catch (error) {
           replaceTask(previous);
-          fail(error, "Não foi possível atualizar a subtarefa.");
+          fail(error, t("Não foi possível atualizar a subtarefa."));
         }
       },
 
@@ -417,7 +419,7 @@ export function WorkspaceProvider({
         try {
           await taskRequest(`/api/subtasks/${subtaskId}`, { method: "PATCH", json: { title } });
         } catch (error) {
-          fail(error, "Não foi possível renomear a subtarefa.");
+          fail(error, t("Não foi possível renomear a subtarefa."));
         }
       },
 
@@ -432,7 +434,7 @@ export function WorkspaceProvider({
           await taskRequest(`/api/subtasks/${subtaskId}`, { method: "DELETE" });
         } catch (error) {
           replaceTask(previous);
-          fail(error, "Não foi possível excluir a subtarefa.");
+          fail(error, t("Não foi possível excluir a subtarefa."));
         }
       },
 
@@ -456,7 +458,7 @@ export function WorkspaceProvider({
           });
         } catch (error) {
           replaceTask(previous);
-          fail(error, "Não foi possível reordenar as subtarefas.");
+          fail(error, t("Não foi possível reordenar as subtarefas."));
         }
       },
 
@@ -465,7 +467,7 @@ export function WorkspaceProvider({
           await taskRequest(`/api/tasks/${taskId}/comments`, { method: "POST", json: { content } });
           return true;
         } catch (error) {
-          fail(error, "Não foi possível adicionar o comentário.");
+          fail(error, t("Não foi possível adicionar o comentário."));
           return false;
         }
       },
@@ -474,7 +476,7 @@ export function WorkspaceProvider({
         try {
           await taskRequest(`/api/tasks/${taskId}/comments/${commentId}`, { method: "DELETE" });
         } catch (error) {
-          fail(error, "Não foi possível excluir o comentário.");
+          fail(error, t("Não foi possível excluir o comentário."));
         }
       },
 
@@ -483,9 +485,9 @@ export function WorkspaceProvider({
           await taskRequest(`/api/tasks/${taskId}/description-history/${historyId}/restore`, {
             method: "POST",
           });
-          toast.success("Descrição restaurada");
+          toast.success(t("Descrição restaurada"));
         } catch (error) {
-          fail(error, "Não foi possível restaurar a descrição.");
+          fail(error, t("Não foi possível restaurar a descrição."));
         }
       },
 
@@ -497,7 +499,7 @@ export function WorkspaceProvider({
             ({ note } = await transport.upload<{ note: Note }>(`/api/notes/${note.id}/attachments`, file));
             replaceNote(note);
           } catch (error) {
-            fail(error, `Não foi possível anexar ${file.name}.`);
+            fail(error, t("Não foi possível anexar {name}.", { name: file.name }));
           }
         }
         return note;
@@ -526,12 +528,12 @@ export function WorkspaceProvider({
         setNotes((current) => current.filter((item) => item.id !== id));
         try {
           await transport.request(`/api/notes/${id}`, { method: "DELETE" });
-          toast.success(`"${note?.title ?? "Anotação"}" foi para a lixeira`, {
-            action: { label: "Desfazer", onClick: () => void restoreNote(id) },
+          toast.success(t("\"{name}\" foi para a lixeira", { name: note?.title ?? t("Anotação") }), {
+            action: { label: t("Desfazer"), onClick: () => void restoreNote(id) },
           });
         } catch (error) {
           setNotes(snapshot);
-          fail(error, "Não foi possível excluir a anotação.");
+          fail(error, t("Não foi possível excluir a anotação."));
         }
       },
 
@@ -553,7 +555,7 @@ export function WorkspaceProvider({
           replaceNote(note);
         } catch (error) {
           replaceNote(previous);
-          fail(error, "Não foi possível fixar a anotação.");
+          fail(error, t("Não foi possível fixar a anotação."));
         }
       },
 
@@ -569,7 +571,7 @@ export function WorkspaceProvider({
           await transport.request("/api/notes/reorder", { method: "POST", json: { noteIds: ids } });
         } catch (error) {
           setNotes(snapshot);
-          fail(error, "Não foi possível reordenar as fixadas.");
+          fail(error, t("Não foi possível reordenar as fixadas."));
         }
       },
 
@@ -593,7 +595,7 @@ export function WorkspaceProvider({
         router.refresh();
       },
     };
-  }, [enqueue, replaceNote, replaceTask, router, toast, transport]);
+  }, [enqueue, replaceNote, replaceTask, router, t, toast, transport]);
 
   const data = useMemo<WorkspaceData>(
     () => ({
