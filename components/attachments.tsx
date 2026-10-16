@@ -280,6 +280,7 @@ export function FileDropZone({
         multiple
         className="sr-only"
         tabIndex={-1}
+        aria-label="Escolher arquivos"
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";

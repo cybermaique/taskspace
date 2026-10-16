@@ -115,6 +115,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
               ref={fileRef}
               type="file"
               accept="image/*"
+              aria-label="Escolher foto de perfil"
               className="sr-only"
               onChange={(event) => {
                 const file = event.target.files?.[0];

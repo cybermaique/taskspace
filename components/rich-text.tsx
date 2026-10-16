@@ -75,7 +75,6 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
 function renderInline(
   text: string,
   key: string,
-  onTagClick?: (tag: string) => void,
   activeTag?: string | null,
 ) {
   return text.split(INLINE_PATTERN).map((part, index) => {
@@ -91,23 +90,12 @@ function renderInline(
     }
     if (/^#[\wÀ-ɏ-]+$/.test(part)) {
       const tag = part.toLowerCase();
-      return onTagClick ? (
-        <button
+      // Tags are highlighted inline; filtering happens through the tag chips.
+      return (
+        <span
           key={partKey}
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onTagClick(tag);
-          }}
-          className={cn(
-            "rounded font-medium text-primary hover:underline",
-            activeTag === tag && "bg-brand-soft px-0.5",
-          )}
+          className={cn("font-medium text-primary", activeTag === tag && "rounded bg-brand-soft px-0.5")}
         >
-          {part}
-        </button>
-      ) : (
-        <span key={partKey} className="font-medium text-primary">
           {part}
         </span>
       );
@@ -116,18 +104,13 @@ function renderInline(
   });
 }
 
-function renderText(
-  text: string,
-  key: string,
-  onTagClick?: (tag: string) => void,
-  activeTag?: string | null,
-) {
+function renderText(text: string, key: string, activeTag?: string | null) {
   const nodes: ReactNode[] = [];
   let cursor = 0;
   let index = 0;
   for (const match of text.matchAll(SHORTCUT_PATTERN)) {
     const labelStart = (match.index ?? 0) + (match[1]?.length ?? 0);
-    nodes.push(...renderInline(text.slice(cursor, labelStart), `${key}-p${index}`, onTagClick, activeTag));
+    nodes.push(...renderInline(text.slice(cursor, labelStart), `${key}-p${index}`, activeTag));
     const { url, trailing } = splitTrailingPunctuation(match[3]);
     const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
     nodes.push(
@@ -139,7 +122,7 @@ function renderText(
     cursor = (match.index ?? 0) + match[0].length;
     index += 1;
   }
-  nodes.push(...renderInline(text.slice(cursor), `${key}-r`, onTagClick, activeTag));
+  nodes.push(...renderInline(text.slice(cursor), `${key}-r`, activeTag));
   return nodes;
 }
 
@@ -219,13 +202,11 @@ export function RichText({
   content,
   className,
   collapsibleCode = false,
-  onTagClick,
   activeTag,
 }: {
   content: string;
   className?: string;
   collapsibleCode?: boolean;
-  onTagClick?: (tag: string) => void;
   activeTag?: string | null;
 }) {
   const blocks = useMemo(() => parseBlocks(content), [content]);
@@ -242,7 +223,7 @@ export function RichText({
           />
         ) : (
           <p key={`text-${index}`} className="rich-text leading-relaxed">
-            {renderText(block.content, `t${index}`, onTagClick, activeTag)}
+            {renderText(block.content, `t${index}`, activeTag)}
           </p>
         ),
       )}

@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   extractHashtags,
@@ -42,23 +41,17 @@ describe("text helpers", () => {
 });
 
 describe("<RichText />", () => {
-  it("renders links, named shortcuts and clickable tags", async () => {
-    const onTagClick = vi.fn();
-    render(
-      <RichText
-        content={"Docs > nextjs.org\nVer https://example.com/a. #api"}
-        onTagClick={onTagClick}
-      />,
-    );
+  it("renders links, named shortcuts and highlighted tags", () => {
+    render(<RichText content={"Docs > nextjs.org\nVer https://example.com/a. #api"} activeTag="#api" />);
 
     expect(screen.getByRole("link", { name: "Docs" })).toHaveProperty("href", "https://nextjs.org/");
     expect(screen.getByRole("link", { name: "example.com/a" })).toHaveProperty(
       "href",
       "https://example.com/a",
     );
-
-    await userEvent.click(screen.getByRole("button", { name: "#api" }));
-    expect(onTagClick).toHaveBeenCalledWith("#api");
+    // Tags are text, not controls: filtering lives in the tag chips.
+    expect(screen.queryByRole("button", { name: "#api" })).toBeNull();
+    expect(screen.getByText("#api").className).toContain("bg-brand-soft");
   });
 
   it("opens external links safely", () => {

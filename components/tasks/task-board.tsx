@@ -13,12 +13,10 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragOverEvent,
   type DragStartEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
@@ -32,23 +30,17 @@ import { TaskCard } from "@/components/tasks/task-card";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useWorkspaceActions, useWorkspaceUI } from "@/components/workspace/workspace-provider";
+import { resolveDrop, type BoardColumns } from "@/lib/ordering";
 import { STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 import { TASK_STATUSES, type CreateTaskInput, type Task, type TaskStatus } from "@/types/task";
 
-type Columns = Record<TaskStatus, string[]>;
-
 const COLLAPSED_LIMIT = 15;
 
-function buildColumns(tasks: Task[]): Columns {
-  const columns: Columns = { not_started: [], in_progress: [], waiting: [], completed: [] };
+function buildColumns(tasks: Task[]): BoardColumns {
+  const columns: BoardColumns = { not_started: [], in_progress: [], waiting: [], completed: [] };
   for (const task of tasks) columns[task.status].push(task.id);
   return columns;
-}
-
-function findContainer(id: UniqueIdentifier, columns: Columns): TaskStatus | undefined {
-  if (TASK_STATUSES.includes(id as TaskStatus)) return id as TaskStatus;
-  return TASK_STATUSES.find((status) => columns[status].includes(String(id)));
 }
 
 const SortableTaskCard = memo(function SortableTaskCard({
@@ -60,9 +52,15 @@ const SortableTaskCard = memo(function SortableTaskCard({
   compact: boolean;
   onOpen: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: task.id,
-  });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
 
   return (
     <TaskCard
@@ -71,12 +69,10 @@ const SortableTaskCard = memo(function SortableTaskCard({
       compact={compact}
       dragging={isDragging}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      {...attributes}
+      // Pointer listeners on the whole card; keyboard drag starts from the open button.
       {...listeners}
-      onKeyDown={(event) => {
-        listeners?.onKeyDown?.(event);
-        if (event.key === "Enter" && event.target === event.currentTarget) onOpen(task.id);
-      }}
+      openButtonRef={setActivatorNodeRef}
+      openButtonProps={attributes}
       onOpen={() => onOpen(task.id)}
     />
   );
@@ -173,10 +169,8 @@ export function TaskBoard({
   const { openTask } = useWorkspaceUI();
   const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
   const baseColumns = useMemo(() => buildColumns(tasks), [tasks]);
-  const [dragColumns, setDragColumns] = useState<Columns | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const lastDragEndRef = useRef(0);
-  const columns = dragColumns ?? baseColumns;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -198,55 +192,35 @@ export function TaskBoard({
 
   const reset = () => {
     setActiveId(null);
-    setDragColumns(null);
     lastDragEndRef.current = Date.now();
   };
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(String(active.id));
-    setDragColumns(baseColumns);
   };
 
-  const handleDragOver = ({ active, over }: DragOverEvent) => {
-    if (!over) return;
-    setDragColumns((previous) => {
-      const current = previous ?? baseColumns;
-      const from = findContainer(active.id, current);
-      const to = findContainer(over.id, current);
-      if (!from || !to || from === to) return previous;
-
-      const target = current[to].filter((id) => id !== active.id);
-      const overIndex = target.indexOf(String(over.id));
-      const translated = active.rect.current.translated;
-      const isBelow = translated ? translated.top > over.rect.top + over.rect.height / 2 : false;
-      const index = overIndex >= 0 ? overIndex + (isBelow ? 1 : 0) : target.length;
-      target.splice(index, 0, String(active.id));
-
-      return {
-        ...current,
-        [from]: current[from].filter((id) => id !== active.id),
-        [to]: target,
-      };
-    });
-  };
-
+  // Cards stay in their column while dragging (the overlay follows the pointer and
+  // the target column highlights). Moving items between containers on every
+  // dragover makes collision detection oscillate into an update loop.
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    const current = dragColumns ?? baseColumns;
-    const container = findContainer(active.id, current);
     reset();
-    if (!over || !container) return;
-
-    let items = current[container];
-    if (findContainer(over.id, current) === container) {
-      const oldIndex = items.indexOf(String(active.id));
-      const newIndex = items.indexOf(String(over.id));
-      if (newIndex >= 0 && oldIndex !== newIndex) items = arrayMove(items, oldIndex, newIndex);
-    }
-    const index = items.indexOf(String(active.id));
-    actions.moveTask(String(active.id), container, items[index + 1] ?? null);
+    if (!over) return;
+    const translated = active.rect.current.translated;
+    const isBelow = translated ? translated.top > over.rect.top + over.rect.height / 2 : false;
+    const drop = resolveDrop(baseColumns, String(active.id), String(over.id), isBelow);
+    if (drop) actions.moveTask(String(active.id), drop.status, drop.beforeId);
   };
 
   const activeTask = activeId ? tasksById.get(activeId) : undefined;
+
+  // Screen reader announcements use titles and column names, never raw ids.
+  const title = (id: UniqueIdentifier) => `"${tasksById.get(String(id))?.title ?? "tarefa"}"`;
+  const describe = (id: UniqueIdentifier) => {
+    const status = TASK_STATUSES.find((item) => item === id);
+    if (status) return `a coluna ${STATUS_META[status].label}`;
+    const task = tasksById.get(String(id));
+    return task ? `${title(id)}, na coluna ${STATUS_META[task.status].label}` : "uma área";
+  };
 
   return (
     <DndContext
@@ -255,13 +229,20 @@ export function TaskBoard({
       collisionDetection={closestCorners}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={reset}
       accessibility={{
         screenReaderInstructions: {
           draggable:
             "Para mover uma tarefa, pressione espaço. Use as setas para mudar de posição ou coluna e espaço para soltar. Esc cancela.",
+        },
+        announcements: {
+          onDragStart: ({ active }) => `Tarefa ${title(active.id)} selecionada.`,
+          onDragOver: ({ active, over }) =>
+            over ? `${title(active.id)} sobre ${describe(over.id)}.` : `${title(active.id)} fora de uma coluna.`,
+          onDragEnd: ({ active, over }) =>
+            over ? `${title(active.id)} solta em ${describe(over.id)}.` : `${title(active.id)} solta.`,
+          onDragCancel: ({ active }) => `Movimento cancelado. ${title(active.id)} voltou ao lugar.`,
         },
       }}
     >
@@ -270,7 +251,7 @@ export function TaskBoard({
           <BoardColumn
             key={status}
             status={status}
-            ids={columns[status]}
+            ids={baseColumns[status]}
             tasksById={tasksById}
             compact={compact}
             defaults={defaults}

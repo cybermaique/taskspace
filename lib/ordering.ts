@@ -58,3 +58,46 @@ export function planTaskMove(
     orderChanged,
   };
 }
+
+export type BoardColumns = Record<TaskStatus, string[]>;
+
+/**
+ * Where a dragged card lands. `overId` is either a card or a column id; when it
+ * is a card in another column, `isBelowOver` decides whether it goes after it.
+ */
+export function resolveDrop(
+  columns: BoardColumns,
+  activeId: string,
+  overId: string,
+  isBelowOver: boolean,
+): { status: TaskStatus; beforeId: string | null } | null {
+  const statuses = Object.keys(columns) as TaskStatus[];
+  const containerOf = (id: string) =>
+    statuses.includes(id as TaskStatus)
+      ? (id as TaskStatus)
+      : statuses.find((status) => columns[status].includes(id));
+
+  const from = containerOf(activeId);
+  const to = containerOf(overId);
+  if (!from || !to) return null;
+
+  // Dropped on the column itself (empty area): append to its end.
+  if (overId === to) {
+    return from === to && columns[to].at(-1) === activeId ? null : { status: to, beforeId: null };
+  }
+
+  let items: string[];
+  if (from === to) {
+    const oldIndex = columns[to].indexOf(activeId);
+    const newIndex = columns[to].indexOf(overId);
+    if (oldIndex === newIndex) return null;
+    items = [...columns[to]];
+    items.splice(oldIndex, 1);
+    items.splice(newIndex, 0, activeId);
+  } else {
+    items = [...columns[to]];
+    items.splice(items.indexOf(overId) + (isBelowOver ? 1 : 0), 0, activeId);
+  }
+
+  return { status: to, beforeId: items[items.indexOf(activeId) + 1] ?? null };
+}

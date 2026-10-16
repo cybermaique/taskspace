@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isSamePermutation, planTaskMove } from "@/lib/ordering";
+import { isSamePermutation, planTaskMove, resolveDrop } from "@/lib/ordering";
 import type { Task, TaskStatus } from "@/types/task";
 
 function task(id: string, status: TaskStatus, position: number): Task {
@@ -97,5 +97,34 @@ describe("planTaskMove", () => {
     const snapshot = structuredClone(board);
     planTaskMove(board, "a", "completed", null);
     expect(board).toEqual(snapshot);
+  });
+});
+
+describe("resolveDrop", () => {
+  const columns = {
+    not_started: ["a", "b", "d"],
+    in_progress: ["c"],
+    waiting: [],
+    completed: ["e"],
+  };
+
+  it("reorders within a column using the hovered card's slot", () => {
+    expect(resolveDrop(columns, "d", "a", false)).toEqual({ status: "not_started", beforeId: "a" });
+    expect(resolveDrop(columns, "a", "d", false)).toEqual({ status: "not_started", beforeId: null });
+  });
+
+  it("places a card before or after a card in another column", () => {
+    expect(resolveDrop(columns, "a", "c", false)).toEqual({ status: "in_progress", beforeId: "c" });
+    expect(resolveDrop(columns, "a", "c", true)).toEqual({ status: "in_progress", beforeId: null });
+  });
+
+  it("appends when dropped on a column's empty area", () => {
+    expect(resolveDrop(columns, "b", "waiting", false)).toEqual({ status: "waiting", beforeId: null });
+  });
+
+  it("ignores drops that change nothing or target unknown ids", () => {
+    expect(resolveDrop(columns, "b", "b", false)).toBeNull();
+    expect(resolveDrop(columns, "d", "not_started", false)).toBeNull();
+    expect(resolveDrop(columns, "a", "missing", false)).toBeNull();
   });
 });

@@ -59,17 +59,18 @@ function TaskRow({ task }: { task: Task }) {
   const isDone = task.status === "completed";
 
   const row = (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => openTask(task.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" && event.target === event.currentTarget) openTask(task.id);
-      }}
-      className="group/row flex min-h-12 cursor-pointer items-center gap-2 border-b px-2 py-2 outline-none last:border-b-0 hover:bg-accent/60 focus-visible:bg-accent sm:gap-3 sm:px-3"
-    >
-      <StatusPicker task={task} />
-      <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
+    <div className="group/row relative flex min-h-12 items-center gap-2 border-b px-2 py-2 last:border-b-0 hover:bg-accent/60 has-[>button:focus-visible]:bg-accent sm:gap-3 sm:px-3">
+      {/* Full-row open button; the status picker is a sibling so controls never nest. */}
+      <button
+        type="button"
+        aria-label={task.title}
+        onClick={() => openTask(task.id)}
+        className="absolute inset-0 cursor-pointer outline-none"
+      />
+      <div className="relative">
+        <StatusPicker task={task} />
+      </div>
+      <div className="pointer-events-none relative min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
         <p
           className={cn(
             "truncate text-sm font-medium sm:min-w-0 sm:flex-1",
@@ -84,7 +85,7 @@ function TaskRow({ task }: { task: Task }) {
       </div>
       <time
         dateTime={task.created_at}
-        className="hidden w-14 shrink-0 text-right text-xs text-muted-foreground tabular-nums sm:block"
+        className="pointer-events-none relative hidden w-14 shrink-0 text-right text-xs text-muted-foreground tabular-nums sm:block"
         suppressHydrationWarning
       >
         {formatShortDate(task.created_at)}

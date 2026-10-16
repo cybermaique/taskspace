@@ -80,11 +80,28 @@ interface TaskCardProps extends HTMLAttributes<HTMLDivElement> {
   dragging?: boolean;
   overlay?: boolean;
   onOpen?: () => void;
+  /** Props for the "open" button, which is also the drag handle for keyboard users. */
+  openButtonProps?: HTMLAttributes<HTMLButtonElement>;
+  openButtonRef?: (element: HTMLElement | null) => void;
 }
 
+/**
+ * The card itself is not interactive. A transparent "open" button covers it and
+ * the actions menu sits beside it as a sibling, so no control is nested in another.
+ */
 export const TaskCard = memo(
   forwardRef<HTMLDivElement, TaskCardProps>(function TaskCard(
-    { task, compact = false, dragging = false, overlay = false, onOpen, className, ...props },
+    {
+      task,
+      compact = false,
+      dragging = false,
+      overlay = false,
+      onOpen,
+      openButtonProps,
+      openButtonRef,
+      className,
+      ...props
+    },
     ref,
   ) {
     const isDone = task.status === "completed";
@@ -93,61 +110,71 @@ export const TaskCard = memo(
     const card = (
       <div
         ref={ref}
+        data-task-id={task.id}
         data-dragging={dragging}
-        role="button"
-        tabIndex={0}
-        aria-label={task.title}
-        onClick={onOpen}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && event.target === event.currentTarget) onOpen?.();
-        }}
         className={cn(
-          "task-card group/card relative cursor-pointer touch-manipulation rounded-xl border bg-card text-left shadow-soft transition-[box-shadow,border-color,opacity] outline-none select-none hover:border-foreground/15 hover:shadow-lifted focus-visible:ring-3 focus-visible:ring-ring",
+          "task-card group/card relative touch-manipulation rounded-xl border bg-card text-left shadow-soft transition-[box-shadow,border-color,opacity] select-none hover:border-foreground/15 hover:shadow-lifted",
           compact ? "p-2.5" : "p-3",
           overlay && "task-card-overlay shadow-overlay",
           className,
         )}
         {...props}
       >
-        <div className="flex items-start gap-2">
-          <p
-            className={cn(
-              "min-w-0 flex-1 text-sm leading-snug font-medium break-words",
-              compact ? "line-clamp-1" : "line-clamp-3",
-              isDone && "text-muted-foreground line-through decoration-muted-foreground/40",
-            )}
-          >
-            {task.title}
-          </p>
-          {!overlay ? (
-            <Menu>
-              <MenuTrigger
-                onClick={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
-                className="-mt-1 -mr-1.5 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-hover/card:opacity-100 hover:bg-accent hover:text-foreground focus-visible:opacity-100 data-popup-open:opacity-100 pointer-coarse:opacity-100"
-                aria-label={`Ações de ${task.title}`}
-              >
-                <Ellipsis className="size-4" />
-              </MenuTrigger>
-              <TaskMenuContent task={task} />
-            </Menu>
-          ) : null}
-        </div>
-        {description ? (
-          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{description}</p>
+        {!overlay ? (
+          <button
+            ref={openButtonRef}
+            type="button"
+            aria-label={task.title}
+            {...openButtonProps}
+            onClick={onOpen}
+            className="absolute inset-0 cursor-pointer rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
+          />
         ) : null}
-        <div className={cn("flex items-end justify-between gap-2", compact ? "mt-1.5" : "mt-2.5")}>
-          <TaskMeta task={task} compact={compact} />
-          {!compact ? (
-            <time
-              dateTime={task.created_at}
-              className="shrink-0 text-[0.7rem] text-muted-foreground/80 tabular-nums"
-              suppressHydrationWarning
+        <div className="pointer-events-none relative">
+          <div className="flex items-start gap-2">
+            <p
+              className={cn(
+                "min-w-0 flex-1 text-sm leading-snug font-medium break-words",
+                compact ? "line-clamp-1" : "line-clamp-3",
+                isDone && "text-muted-foreground line-through decoration-muted-foreground/40",
+              )}
             >
-              {formatShortDate(task.created_at)}
-            </time>
+              {task.title}
+            </p>
+            {/* Reserves room for the actions button rendered outside this layer. */}
+            {!overlay ? <span className="-mt-1 -mr-1.5 size-7 shrink-0" aria-hidden="true" /> : null}
+          </div>
+          {description ? (
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
+          <div className={cn("flex items-end justify-between gap-2", compact ? "mt-1.5" : "mt-2.5")}>
+            <TaskMeta task={task} compact={compact} />
+            {!compact ? (
+              <time
+                dateTime={task.created_at}
+                className="shrink-0 text-[0.7rem] text-muted-foreground tabular-nums"
+                suppressHydrationWarning
+              >
+                {formatShortDate(task.created_at)}
+              </time>
+            ) : null}
+          </div>
         </div>
+        {!overlay ? (
+          <Menu>
+            <MenuTrigger
+              onPointerDown={(event) => event.stopPropagation()}
+              className={cn(
+                "absolute right-1.5 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-hover/card:opacity-100 hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring data-popup-open:opacity-100 pointer-coarse:opacity-100",
+                compact ? "top-1.5" : "top-2",
+              )}
+              aria-label={`Ações de ${task.title}`}
+            >
+              <Ellipsis className="size-4" />
+            </MenuTrigger>
+            <TaskMenuContent task={task} />
+          </Menu>
+        ) : null}
       </div>
     );
 

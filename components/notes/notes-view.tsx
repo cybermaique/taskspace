@@ -67,9 +67,8 @@ function SortablePinnedCard(props: {
   activeTag: string | null;
   onTagClick: (tag: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: props.note.id,
-  });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: props.note.id });
   return (
     <NoteCard
       ref={setNodeRef}
@@ -77,8 +76,9 @@ function SortablePinnedCard(props: {
       dragging={isDragging}
       className="mb-0 h-full"
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      {...attributes}
       {...listeners}
+      openButtonRef={setActivatorNodeRef}
+      openButtonProps={attributes}
     />
   );
 }
@@ -232,7 +232,7 @@ export function NotesView() {
                 >
                   <Hash className="size-3" />
                   {tag.replace(/^#/, "")}
-                  <span className="tabular-nums opacity-60">{count}</span>
+                  <span className="font-normal tabular-nums">{count}</span>
                 </button>
               ))}
             </div>

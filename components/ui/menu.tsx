@@ -1,16 +1,42 @@
 "use client"
 
+import { useState } from "react"
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Menu = MenuPrimitive.Root
+/**
+ * Dropdown menus are non-modal: they never mark the rest of the page
+ * aria-hidden, so an item that removes its own trigger (e.g. "Excluir")
+ * cannot leave stale hidden content behind.
+ */
+function Menu({ modal = false, ...props }: MenuPrimitive.Root.Props) {
+  return <MenuPrimitive.Root modal={modal} {...props} />
+}
+
 const MenuTrigger = MenuPrimitive.Trigger
 const MenuGroup = MenuPrimitive.Group
 const MenuRadioGroup = MenuPrimitive.RadioGroup
-const MenuSub = MenuPrimitive.SubmenuRoot
+/**
+ * Hover opens a submenu; a click right after would toggle it closed again.
+ * Clicking the trigger therefore only ever opens it.
+ */
+function MenuSub(props: MenuPrimitive.SubmenuRoot.Props) {
+  const [open, setOpen] = useState(false)
+  return (
+    <MenuPrimitive.SubmenuRoot
+      open={open}
+      onOpenChange={(next, details) => {
+        if (!next && details.reason === "trigger-press") return
+        setOpen(next)
+      }}
+      {...props}
+    />
+  )
+}
+
 const ContextMenu = ContextMenuPrimitive.Root
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger
 

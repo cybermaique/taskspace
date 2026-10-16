@@ -52,11 +52,24 @@ interface NoteCardProps extends HTMLAttributes<HTMLDivElement> {
   activeTag?: string | null;
   onTagClick?: (tag: string) => void;
   dragging?: boolean;
+  /** Props for the "open" button, which is also the keyboard drag handle when sortable. */
+  openButtonProps?: HTMLAttributes<HTMLButtonElement>;
+  openButtonRef?: (element: HTMLElement | null) => void;
 }
 
 export const NoteCard = memo(
   forwardRef<HTMLDivElement, NoteCardProps>(function NoteCard(
-    { note, compact = false, activeTag, onTagClick, dragging, className, ...props },
+    {
+      note,
+      compact = false,
+      activeTag,
+      onTagClick,
+      dragging,
+      openButtonProps,
+      openButtonRef,
+      className,
+      ...props
+    },
     ref,
   ) {
     const actions = useWorkspaceActions();
@@ -67,26 +80,28 @@ export const NoteCard = memo(
     const card = (
       <div
         ref={ref}
-        role="button"
-        tabIndex={0}
-        aria-label={note.title}
         data-dragging={dragging}
-        onClick={open}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && event.target === event.currentTarget) open();
-        }}
         className={cn(
-          "group/note relative mb-3 cursor-pointer break-inside-avoid rounded-xl border bg-card text-left shadow-soft transition-[box-shadow,border-color] outline-none hover:border-foreground/15 hover:shadow-lifted focus-visible:ring-3 focus-visible:ring-ring data-[dragging=true]:opacity-40",
+          "group/note relative mb-3 break-inside-avoid rounded-xl border bg-card text-left shadow-soft transition-[box-shadow,border-color] hover:border-foreground/15 hover:shadow-lifted data-[dragging=true]:opacity-40",
           compact ? "p-3" : "p-4",
           className,
         )}
         {...props}
       >
-        <div className="flex items-start gap-2">
+        {/* Covers the card; links, tags and actions sit above it as siblings, never nested. */}
+        <button
+          ref={openButtonRef}
+          type="button"
+          aria-label={note.title}
+          {...openButtonProps}
+          onClick={open}
+          className="absolute inset-0 cursor-pointer rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
+        />
+        <div className="pointer-events-none relative flex items-start gap-2">
           <h3 className="min-w-0 flex-1 text-[0.9375rem] leading-snug font-semibold break-words">
             {note.title}
           </h3>
-          <div className="-mt-1 -mr-1.5 flex shrink-0 items-center opacity-0 transition-opacity group-hover/note:opacity-100 focus-within:opacity-100 has-[[data-popup-open]]:opacity-100 pointer-coarse:opacity-100">
+          <div className="pointer-events-auto -mt-1 -mr-1.5 flex shrink-0 items-center opacity-0 transition-opacity group-hover/note:opacity-100 focus-within:opacity-100 has-[[data-popup-open]]:opacity-100 pointer-coarse:opacity-100">
             <Tooltip content={note.is_pinned ? "Desafixar" : "Fixar"}>
               <button
                 type="button"
@@ -119,15 +134,15 @@ export const NoteCard = memo(
 
         <div
           className={cn(
-            "relative mt-2 overflow-hidden text-sm text-foreground/85",
+            "pointer-events-none relative mt-2 overflow-hidden text-sm text-foreground/85 [&_a]:pointer-events-auto [&_button]:pointer-events-auto",
             compact ? "max-h-28" : "max-h-64",
             "[mask-image:linear-gradient(to_bottom,black_75%,transparent)]",
           )}
         >
-          <RichText content={note.content} collapsibleCode onTagClick={onTagClick} activeTag={activeTag} />
+          <RichText content={note.content} collapsibleCode activeTag={activeTag} />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+        <div className="pointer-events-none relative mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
           <time dateTime={note.updated_at} suppressHydrationWarning>
             {formatShortDate(note.updated_at)}
           </time>
@@ -146,7 +161,7 @@ export const NoteCard = memo(
                 onTagClick?.(tag);
               }}
               className={cn(
-                "rounded-md bg-muted px-1.5 py-0.5 font-medium transition-colors hover:bg-brand-soft hover:text-primary",
+                "pointer-events-auto inline-flex h-6 items-center rounded-md bg-muted px-2 font-medium transition-colors hover:bg-brand-soft hover:text-primary",
                 activeTag === tag && "bg-brand-soft text-primary",
               )}
             >

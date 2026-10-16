@@ -186,7 +186,7 @@ function MobileNavButton({
       <span className="relative">
         <item.icon className="size-5" />
         {count > 0 ? (
-          <span className="absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-muted px-1 text-center text-[0.6rem] leading-4 text-muted-foreground tabular-nums">
+          <span aria-hidden="true" className="absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-muted px-1 text-center text-[0.6rem] leading-4 text-muted-foreground tabular-nums">
             {count > 99 ? "99+" : count}
           </span>
         ) : null}
