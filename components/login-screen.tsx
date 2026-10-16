@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CircleCheck, Eye, EyeOff, FlaskConical, LoaderCircle, NotebookPen, Search, SquareKanban } from "lucide-react";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 
 const AUTH_ERRORS: Record<string, string> = {
   "Invalid login credentials": "E-mail ou senha incorretos.",
@@ -23,10 +25,11 @@ const HIGHLIGHTS = [
 ];
 
 function BoardPreview() {
+  const { t } = useI18n();
   const columns = [
-    { label: "A fazer", tone: "bg-status-todo", cards: [78, 52] },
-    { label: "Em andamento", tone: "bg-status-progress", cards: [64] },
-    { label: "Concluída", tone: "bg-status-done", cards: [56, 70, 44] },
+    { label: t("A fazer"), tone: "bg-status-todo", cards: [78, 52] },
+    { label: t("Em andamento"), tone: "bg-status-progress", cards: [64] },
+    { label: t("Concluída"), tone: "bg-status-done", cards: [56, 70, 44] },
   ];
   return (
     <div className="grid grid-cols-3 gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur" aria-hidden="true">
@@ -49,6 +52,7 @@ function BoardPreview() {
 }
 
 export function LoginScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -74,7 +78,7 @@ export function LoginScreen() {
     }
     if (isSignUp && !result.data.session) {
       setLoading(false);
-      setMessage({ kind: "info", text: "Conta criada! Enviamos um link de confirmação para o seu e-mail." });
+      setMessage({ kind: "info", text: t("Conta criada! Enviamos um link de confirmação para o seu e-mail.") });
       return;
     }
     router.replace("/");
@@ -82,7 +86,7 @@ export function LoginScreen() {
   };
 
   return (
-    <main className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
+    <main className="relative grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden overflow-hidden bg-zinc-950 p-12 text-white lg:flex lg:flex-col">
         <div
           className="pointer-events-none absolute inset-0"
@@ -95,16 +99,12 @@ export function LoginScreen() {
           <span className="grid size-8 place-items-center rounded-lg bg-white text-zinc-950">
             <SquareKanban className="size-4" />
           </span>
-          <span className="font-semibold tracking-tight">Taskboard</span>
+          <span className="font-semibold tracking-tight">Taskspace</span>
         </div>
         <div className="relative mt-auto max-w-lg space-y-8">
           <div>
-            <h1 className="text-4xl leading-[1.1] font-semibold tracking-tight text-balance">
-              Clareza para o que importa hoje.
-            </h1>
-            <p className="mt-3 text-base text-white/60">
-              Tarefas, subtarefas e anotações num só lugar — rápido como deve ser.
-            </p>
+            <h1 className="text-4xl leading-[1.1] font-semibold tracking-tight text-balance">{t("Clareza para o que importa hoje.")}</h1>
+            <p className="mt-3 text-base text-white/60">{t("Tarefas, subtarefas e anotações num só lugar — rápido como deve ser.")}</p>
           </div>
           <BoardPreview />
           <ul className="space-y-3">
@@ -112,8 +112,8 @@ export function LoginScreen() {
               <li key={item.title} className="flex items-start gap-3">
                 <item.icon className="mt-0.5 size-4 shrink-0 text-white/70" />
                 <p className="text-sm">
-                  <span className="font-medium">{item.title}.</span>{" "}
-                  <span className="text-white/60">{item.text}</span>
+                  <span className="font-medium">{t(item.title)}.</span>{" "}
+                  <span className="text-white/60">{t(item.text)}</span>
                 </p>
               </li>
             ))}
@@ -121,36 +121,37 @@ export function LoginScreen() {
         </div>
       </section>
 
-      <section className="app-backdrop flex items-center justify-center px-5 py-12">
+      <section className="app-backdrop relative flex items-center justify-center px-5 py-12">
+        <div className="absolute top-4 right-4"><LanguageSelector /></div>
         <div className="w-full max-w-sm animate-rise">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
             <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
               <SquareKanban className="size-4" />
             </span>
-            <span className="font-semibold tracking-tight">Taskboard</span>
+            <span className="font-semibold tracking-tight">Taskspace</span>
           </div>
           <h2 className="text-2xl font-semibold tracking-tight">
-            {isSignUp ? "Crie sua conta" : "Bem-vindo de volta"}
+            {isSignUp ? t("Crie sua conta") : t("Bem-vindo de volta")}
           </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {isSignUp ? "Leva menos de um minuto." : "Entre para continuar de onde parou."}
+            {isSignUp ? t("Leva menos de um minuto.") : t("Entre para continuar de onde parou.")}
           </p>
 
           <form onSubmit={submit} className="mt-8 space-y-4">
             <label className="block space-y-1.5">
-              <span className="text-sm font-medium">E-mail</span>
+              <span className="text-sm font-medium">{t("E-mail")}</span>
               <Input
                 type="email"
                 autoComplete="email"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="voce@email.com"
+                placeholder={t("voce@email.com")}
                 className="h-10 bg-card"
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-sm font-medium">Senha</span>
+              <span className="text-sm font-medium">{t("Senha")}</span>
               <span className="relative block">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -159,14 +160,14 @@ export function LoginScreen() {
                   minLength={6}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder={isSignUp ? "Mínimo de 6 caracteres" : "••••••••"}
+                  placeholder={isSignUp ? t("Mínimo de 6 caracteres") : "••••••••"}
                   className="h-10 bg-card pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
                   className="absolute top-1/2 right-1.5 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  aria-label={showPassword ? t("Ocultar senha") : t("Mostrar senha")}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
@@ -184,27 +185,23 @@ export function LoginScreen() {
                 )}
               >
                 {message.kind === "info" ? <CircleCheck className="mt-0.5 size-4 shrink-0 text-status-done" /> : null}
-                {message.text}
+                {t(message.text)}
               </p>
             ) : null}
 
             <Button type="submit" size="lg" className="w-full" disabled={loading}>
               {loading ? <LoaderCircle className="animate-spin" /> : null}
-              {isSignUp ? "Criar conta" : "Entrar"}
+              {isSignUp ? t("Criar conta") : t("Entrar")}
             </Button>
           </form>
 
           <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            ou
-            <span className="h-px flex-1 bg-border" />
+            <span className="h-px flex-1 bg-border" />{t("ou")}<span className="h-px flex-1 bg-border" />
           </div>
           <Button variant="outline" size="lg" className="w-full" nativeButton={false} render={<Link href="/demo" />}>
-            <FlaskConical />
-            Explorar a demonstração
-          </Button>
+            <FlaskConical />{t("Explorar a demonstração")}</Button>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {isSignUp ? "Já tem conta?" : "Ainda não tem conta?"}{" "}
+            {isSignUp ? t("Já tem conta?") : t("Ainda não tem conta?")}{" "}
             <button
               type="button"
               className="font-medium text-primary hover:underline"
@@ -213,7 +210,7 @@ export function LoginScreen() {
                 setMessage(null);
               }}
             >
-              {isSignUp ? "Entrar" : "Criar conta"}
+              {isSignUp ? t("Entrar") : t("Criar conta")}
             </button>
           </p>
         </div>

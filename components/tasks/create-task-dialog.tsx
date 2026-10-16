@@ -25,6 +25,7 @@ import {
   type TaskStatus,
   type TaskType,
 } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
 
 function ChipSelect<Value extends string>({
   value,
@@ -37,6 +38,7 @@ function ChipSelect<Value extends string>({
   options: Array<{ value: Value; label: string; icon?: typeof Plus; tone?: string }>;
   ariaLabel: string;
 }) {
+  const { t } = useI18n();
   const current = options.find((option) => option.value === value);
   return (
     <Select value={value} onValueChange={(next) => next && onChange(next as Value)}>
@@ -45,13 +47,13 @@ function ChipSelect<Value extends string>({
         className="h-7 gap-1.5 rounded-full bg-card px-2.5 text-xs font-medium shadow-soft [&>svg:last-child]:size-3.5"
       >
         {current?.icon ? <current.icon className={cn("size-3.5", current.tone)} /> : null}
-        {current?.label}
+        {current ? t(current.label) : null}
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false} align="start">
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.icon ? <option.icon className={option.tone} /> : null}
-            {option.label}
+            {t(option.label)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -86,6 +88,7 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
   onDone: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const { openTask } = useWorkspaceUI();
   const toast = useToast();
@@ -132,17 +135,17 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
       if (createMore) {
         setDraft({ ...emptyDraft(draft.status), category: draft.category, type: draft.type, priority: draft.priority });
         setSubtaskDraft("");
-        toast.success("Tarefa criada", {
-          action: { label: "Abrir", onClick: () => openTask(task.id) },
+        toast.success(t("Tarefa criada"), {
+          action: { label: t("Abrir"), onClick: () => openTask(task.id) },
         });
       } else {
         onDone();
-        toast.success("Tarefa criada", {
-          action: { label: "Abrir", onClick: () => openTask(task.id) },
+        toast.success(t("Tarefa criada"), {
+          action: { label: t("Abrir"), onClick: () => openTask(task.id) },
         });
       }
     } catch (error) {
-      toast.error(errorMessage(error, "Não foi possível criar a tarefa."));
+      toast.error(errorMessage(error, t("Não foi possível criar a tarefa.")));
     } finally {
       setSaving(false);
     }
@@ -175,18 +178,18 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
     >
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pt-5 pb-4">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <span className="rounded-md bg-muted px-1.5 py-0.5">Tarefas</span>
+          <span className="rounded-md bg-muted px-1.5 py-0.5">{t("Tarefas")}</span>
           <span>›</span>
-          <DialogTitle className="text-xs font-medium text-foreground">Nova tarefa</DialogTitle>
-          <DialogDescription className="sr-only">Preencha os dados da nova tarefa.</DialogDescription>
+          <DialogTitle className="text-xs font-medium text-foreground">{t("Nova tarefa")}</DialogTitle>
+          <DialogDescription className="sr-only">{t("Preencha os dados da nova tarefa.")}</DialogDescription>
         </div>
 
         <input
           autoFocus
           value={draft.title}
           onChange={(event) => update({ title: event.target.value })}
-          placeholder="Título da tarefa"
-          aria-label="Título"
+          placeholder={t("Título da tarefa")}
+          aria-label={t("Título")}
           maxLength={200}
           disabled={saving}
           className="w-full bg-transparent text-xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/60"
@@ -197,31 +200,31 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
           onValueChange={(description) => update({ description })}
           onPasteFiles={(files) => update({ files: [...draft.files, ...files] })}
           disabled={saving}
-          placeholder="Adicione uma descrição… (/code ou /json criam blocos de código)"
+          placeholder={t("Adicione uma descrição… (/code ou /json criam blocos de código)")}
           className="min-h-20 border-transparent bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0"
         />
 
         <div className="flex flex-wrap items-center gap-1.5">
           <ChipSelect
-            ariaLabel="Status"
+            ariaLabel={t("Status")}
             value={draft.status}
             onChange={(status) => update({ status })}
             options={TASK_STATUSES.map((value) => ({ value, ...STATUS_META[value] }))}
           />
           <ChipSelect
-            ariaLabel="Prioridade"
+            ariaLabel={t("Prioridade")}
             value={draft.priority}
             onChange={(priority) => update({ priority })}
             options={[...TASK_PRIORITIES].reverse().map((value) => ({ value, ...PRIORITY_META[value] }))}
           />
           <ChipSelect
-            ariaLabel="Categoria"
+            ariaLabel={t("Categoria")}
             value={draft.category}
             onChange={(category) => update({ category, type: getDefaultTaskType(category) })}
             options={TASK_CATEGORY_OPTIONS.map((option) => ({ ...option, icon: FolderClosed, tone: "text-muted-foreground" }))}
           />
           <ChipSelect
-            ariaLabel="Tipo"
+            ariaLabel={t("Tipo")}
             value={draft.type}
             onChange={(type) => update({ type })}
             options={typeOptions}
@@ -239,7 +242,7 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
                     type="button"
                     onClick={() => update({ subtasks: draft.subtasks.filter((_, item) => item !== index) })}
                     className="text-muted-foreground hover:text-foreground"
-                    aria-label={`Remover ${subtask}`}
+                    aria-label={t("Remover {name}", { name: subtask })}
                   >
                     <X className="size-3.5" />
                   </button>
@@ -258,8 +261,8 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
                   addSubtask();
                 }
               }}
-              placeholder="Adicionar subtarefa"
-              aria-label="Nova subtarefa"
+              placeholder={t("Adicionar subtarefa")}
+              aria-label={t("Nova subtarefa")}
               maxLength={200}
               className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
@@ -280,7 +283,7 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
                     type="button"
                     onClick={() => update({ files: draft.files.filter((_, item) => item !== index) })}
                     className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-                    aria-label={`Remover ${file.name}`}
+                    aria-label={t("Remover {name}", { name: file.name })}
                   >
                     <X className="size-3" />
                   </button>
@@ -298,17 +301,11 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
             checked={createMore}
             onChange={(event) => setCreateMore(event.target.checked)}
             className="size-3.5 accent-[var(--primary)]"
-          />
-          Criar outra
-        </label>
+          />{t("Criar outra")}</label>
         <div className="ml-auto flex items-center gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onDone} disabled={saving}>
-            Cancelar
-          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onDone} disabled={saving}>{t("Cancelar")}</Button>
           <Button type="submit" size="sm" disabled={!draft.title.trim() || saving}>
-            {saving ? <LoaderCircle className="animate-spin" /> : null}
-            Criar tarefa
-            <Kbd className="hidden border-primary-foreground/30 sm:inline-flex">Ctrl ↵</Kbd>
+            {saving ? <LoaderCircle className="animate-spin" /> : null}{t("Criar tarefa")}<Kbd className="hidden border-primary-foreground/30 sm:inline-flex">Ctrl ↵</Kbd>
           </Button>
         </div>
       </div>
@@ -317,6 +314,7 @@ function CreateTaskForm({ initialStatus, onDone, onDirtyChange }: {
 }
 
 export function CreateTaskDialog() {
+  const { t } = useI18n();
   const { createTaskStatus, closeCreateTask } = useWorkspaceUI();
   const [dirty, setDirty] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -352,10 +350,10 @@ export function CreateTaskDialog() {
       <ConfirmDialog
         open={confirmClose}
         onOpenChange={setConfirmClose}
-        title="Descartar rascunho?"
-        description="A tarefa ainda não foi criada e o que você escreveu será perdido."
-        confirmLabel="Descartar"
-        cancelLabel="Continuar editando"
+        title={t("Descartar rascunho?")}
+        description={t("A tarefa ainda não foi criada e o que você escreveu será perdido.")}
+        confirmLabel={t("Descartar")}
+        cancelLabel={t("Continuar editando")}
         onConfirm={close}
       />
     </>

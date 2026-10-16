@@ -16,8 +16,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { formatDate, formatFileSize } from "@/lib/format";
+
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 export interface AttachmentLike {
   id: string;
@@ -67,6 +69,8 @@ export function AttachmentGrid<T extends AttachmentLike>({
   onOpen: (index: number) => void;
   onDelete?: (attachment: T) => void;
 }) {
+  const { formatFileSize } = useFormat();
+  const { t } = useI18n();
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {attachments.map((attachment, index) => {
@@ -109,7 +113,7 @@ export function AttachmentGrid<T extends AttachmentLike>({
                 href={`${urlFor(attachment)}?download=1`}
                 download={attachment.file_name}
                 className="inline-flex size-7 items-center justify-center rounded-md bg-popover/90 text-muted-foreground shadow-soft backdrop-blur hover:text-foreground"
-                aria-label={`Baixar ${attachment.file_name}`}
+                aria-label={t("Baixar {name}", { name: attachment.file_name })}
               >
                 <Download className="size-3.5" />
               </a>
@@ -118,7 +122,7 @@ export function AttachmentGrid<T extends AttachmentLike>({
                   type="button"
                   onClick={() => onDelete(attachment)}
                   className="inline-flex size-7 items-center justify-center rounded-md bg-popover/90 text-muted-foreground shadow-soft backdrop-blur hover:text-destructive"
-                  aria-label={`Remover ${attachment.file_name}`}
+                  aria-label={t("Remover {name}", { name: attachment.file_name })}
                 >
                   <Trash2 className="size-3.5" />
                 </button>
@@ -144,6 +148,8 @@ export function AttachmentViewer<T extends AttachmentLike>({
   onIndexChange: (index: number) => void;
   onClose: () => void;
 }) {
+  const { formatDate, formatFileSize } = useFormat();
+  const { t } = useI18n();
   const attachment = index !== null ? attachments[index] : undefined;
   const count = attachments.length;
 
@@ -179,9 +185,7 @@ export function AttachmentViewer<T extends AttachmentLike>({
               nativeButton={false}
               render={<a href={`${url}?download=1`} download={attachment.file_name} />}
             >
-              <Download />
-              Baixar
-            </Button>
+              <Download />{t("Baixar")}</Button>
           ) : null}
         </div>
         <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-xl bg-muted">
@@ -195,9 +199,7 @@ export function AttachmentViewer<T extends AttachmentLike>({
               <iframe src={url} title={attachment.file_name} className="size-full border-0 bg-white" />
             ) : (
               <div className="flex flex-col items-center gap-2 text-center text-sm text-muted-foreground">
-                <FileIcon className="size-10" />
-                Prévia indisponível para este tipo de arquivo.
-              </div>
+                <FileIcon className="size-10" />{t("Prévia indisponível para este tipo de arquivo.")}</div>
             )
           ) : null}
           {count > 1 && index !== null ? (
@@ -207,7 +209,7 @@ export function AttachmentViewer<T extends AttachmentLike>({
                 size="icon"
                 className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full"
                 onClick={() => onIndexChange((index - 1 + count) % count)}
-                aria-label="Anterior"
+                aria-label={t("Anterior")}
               >
                 <ChevronLeft />
               </Button>
@@ -216,7 +218,7 @@ export function AttachmentViewer<T extends AttachmentLike>({
                 size="icon"
                 className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full"
                 onClick={() => onIndexChange((index + 1) % count)}
-                aria-label="Próximo"
+                aria-label={t("Próximo")}
               >
                 <ChevronRight />
               </Button>
@@ -240,6 +242,7 @@ export function FileDropZone({
   children?: ReactNode;
   className?: string;
 }) {
+  const { t } = useI18n();
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -272,7 +275,7 @@ export function FileDropZone({
         )}
       >
         <Upload className="size-3.5" />
-        {dragging ? "Solte para anexar" : "Arraste arquivos, cole um print ou clique para escolher"}
+        {dragging ? t("Solte para anexar") : t("Arraste arquivos, cole um print ou clique para escolher")}
       </button>
       <input
         ref={inputRef}
@@ -280,7 +283,7 @@ export function FileDropZone({
         multiple
         className="sr-only"
         tabIndex={-1}
-        aria-label="Escolher arquivos"
+        aria-label={t("Escolher arquivos")}
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";

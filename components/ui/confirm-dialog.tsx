@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n-provider";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ export function ConfirmDialog({
   destructive = true,
   onConfirm,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
@@ -60,7 +62,7 @@ export function ConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            {cancelLabel}
+            {t(cancelLabel)}
           </Button>
           <Button
             type="button"
@@ -70,7 +72,7 @@ export function ConfirmDialog({
             autoFocus
           >
             {loading ? <Loader2 className="animate-spin" /> : null}
-            {confirmLabel}
+            {t(confirmLabel)}
           </Button>
         </DialogFooter>
       </DialogContent>

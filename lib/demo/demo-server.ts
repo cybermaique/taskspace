@@ -6,6 +6,7 @@ import {
   createSubtaskSchema,
   createTaskSchema,
   describeIssue,
+  validationErrorMap,
   reorderNotesSchema,
   reorderSubtasksSchema,
   reorderTasksSchema,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/api/schemas";
 import type { DemoState } from "@/lib/demo/seed";
 import { isSamePermutation } from "@/lib/ordering";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { Note } from "@/types/note";
 import type { Task } from "@/types/task";
 
@@ -33,9 +35,9 @@ type Handler = (params: string[], body: unknown) => unknown;
 const now = () => new Date().toISOString();
 const live = <T extends { deleted_at: string | null }>(items: T[]) => items.filter((item) => !item.deleted_at);
 
-function parse<Schema extends z.ZodType>(schema: Schema, body: unknown): z.infer<Schema> {
-  const result = schema.safeParse(body);
-  if (!result.success) throw new DemoHttpError(400, describeIssue(result.error));
+function parse<Schema extends z.ZodType>(schema: Schema, body: unknown, locale: Locale): z.infer<Schema> {
+  const result = schema.safeParse(body, { error: validationErrorMap(locale) });
+  if (!result.success) throw new DemoHttpError(400, describeIssue(result.error, locale));
   return result.data;
 }
 
@@ -44,7 +46,7 @@ function parse<Schema extends z.ZodType>(schema: Schema, body: unknown): z.infer
  * and by end-to-end tests. It mirrors the server's validation and the
  * database triggers (status/description history, timestamps).
  */
-export function createDemoServer(state: DemoState) {
+export function createDemoServer(state: DemoState, getLocale: () => Locale = () => DEFAULT_LOCALE) {
   const findTask = (id: string) => {
     const task = state.tasks.find((item) => item.id === id);
     if (!task) throw new DemoHttpError(404, "Tarefa não encontrada.");
@@ -81,7 +83,7 @@ export function createDemoServer(state: DemoState) {
 
   const routes: Array<[string, RegExp, Handler]> = [
     ["POST", /^\/api\/tasks$/, (_params, body) => {
-      const input = parse(createTaskSchema, body);
+      const input = parse(createTaskSchema, body, getLocale());
       const id = crypto.randomUUID();
       const createdAt = now();
       const status = input.status ?? "not_started";
@@ -122,7 +124,7 @@ export function createDemoServer(state: DemoState) {
     }],
     ["PATCH", /^\/api\/tasks\/([^/]+)$/, ([id], body) => {
       const task = findTask(id);
-      const input = parse(updateTaskSchema, body);
+      const input = parse(updateTaskSchema, body, getLocale());
       if (input.title !== undefined) task.title = input.title;
       if (input.description !== undefined) {
         const description = input.description?.trim() || null;
@@ -152,7 +154,7 @@ export function createDemoServer(state: DemoState) {
       return touch(task);
     }],
     ["POST", /^\/api\/tasks\/reorder$/, (_params, body) => {
-      const { task_ids } = parse(reorderTasksSchema, body);
+      const { task_ids } = parse(reorderTasksSchema, body, getLocale());
       const current = live(state.tasks);
       if (!isSamePermutation(current.map((task) => task.id), task_ids)) {
         throw new DemoHttpError(500, "A ordem das tarefas está desatualizada. Recarregue a página.");
@@ -171,7 +173,7 @@ export function createDemoServer(state: DemoState) {
     ["POST", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, () => ({ success: true })],
     ["POST", /^\/api\/tasks\/([^/]+)\/subtasks$/, ([id], body) => {
       const task = findTask(id);
-      const { title } = parse(createSubtaskSchema, body);
+      const { title } = parse(createSubtaskSchema, body, getLocale());
       task.subtasks.push({
         id: crypto.randomUUID(),
         task_id: id,
@@ -186,7 +188,7 @@ export function createDemoServer(state: DemoState) {
     }],
     ["POST", /^\/api\/tasks\/([^/]+)\/subtasks\/reorder$/, ([id], body) => {
       const task = findTask(id);
-      const { subtask_ids } = parse(reorderSubtasksSchema, body);
+      const { subtask_ids } = parse(reorderSubtasksSchema, body, getLocale());
       if (!isSamePermutation(task.subtasks.map((subtask) => subtask.id), subtask_ids)) {
         throw new DemoHttpError(500, "A ordem das subtarefas está desatualizada.");
       }
@@ -195,7 +197,7 @@ export function createDemoServer(state: DemoState) {
       return touch(task);
     }],
     ["PATCH", /^\/api\/subtasks\/([^/]+)$/, ([subtaskId], body) => {
-      const input = parse(updateSubtaskSchema, body);
+      const input = parse(updateSubtaskSchema, body, getLocale());
       const task = state.tasks.find((item) => item.subtasks.some((subtask) => subtask.id === subtaskId));
       const subtask = task?.subtasks.find((item) => item.id === subtaskId);
       if (!task || !subtask) throw new DemoHttpError(404, "Subtarefa não encontrada.");
@@ -215,7 +217,7 @@ export function createDemoServer(state: DemoState) {
     }],
     ["POST", /^\/api\/tasks\/([^/]+)\/comments$/, ([id], body) => {
       const task = findTask(id);
-      const { content } = parse(createCommentSchema, body);
+      const { content } = parse(createCommentSchema, body, getLocale());
       task.comments.push({ id: crypto.randomUUID(), task_id: id, content, created_at: now() });
       return touch(task);
     }],
@@ -233,7 +235,7 @@ export function createDemoServer(state: DemoState) {
       return touch(task);
     }],
     ["POST", /^\/api\/notes$/, (_params, body) => {
-      const input = parse(createNoteSchema, body);
+      const input = parse(createNoteSchema, body, getLocale());
       const note: Note = {
         id: crypto.randomUUID(),
         title: input.title,
@@ -251,7 +253,7 @@ export function createDemoServer(state: DemoState) {
     }],
     ["PATCH", /^\/api\/notes\/([^/]+)$/, ([id], body) => {
       const note = findNote(id);
-      const input = parse(updateNoteSchema, body);
+      const input = parse(updateNoteSchema, body, getLocale());
       Object.assign(
         note,
         Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)),
@@ -268,7 +270,7 @@ export function createDemoServer(state: DemoState) {
       return touchNote(note);
     }],
     ["POST", /^\/api\/notes\/reorder$/, (_params, body) => {
-      const { noteIds } = parse(reorderNotesSchema, body);
+      const { noteIds } = parse(reorderNotesSchema, body, getLocale());
       noteIds.forEach((id, position) => {
         const note = state.notes.find((item) => item.id === id && item.is_pinned);
         if (note) note.pinned_position = position;
@@ -286,7 +288,7 @@ export function createDemoServer(state: DemoState) {
       notes: structuredClone(state.notes.filter((note) => note.deleted_at)),
     })],
     ["PATCH", /^\/api\/profile$/, (_params, body) => {
-      const input = parse(updateProfileSchema, body);
+      const input = parse(updateProfileSchema, body, getLocale());
       Object.assign(
         state.profile,
         Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)),

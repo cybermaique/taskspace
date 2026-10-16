@@ -16,12 +16,15 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { useWorkspaceActions, useWorkspaceUI } from "@/components/workspace/workspace-provider";
-import { formatShortDate } from "@/lib/format";
+
 import { STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 import { TASK_STATUSES, type CreateTaskInput, type Task, type TaskStatus } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 function StatusPicker({ task }: { task: Task }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const meta = STATUS_META[task.status];
 
@@ -30,7 +33,7 @@ function StatusPicker({ task }: { task: Task }) {
       <MenuTrigger
         onClick={(event) => event.stopPropagation()}
         className="inline-flex size-7 shrink-0 items-center justify-center rounded-md outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring"
-        aria-label={`Status: ${meta.label}. Alterar status`}
+        aria-label={t("Status: {status}. Alterar status", { status: t(meta.label) })}
       >
         <meta.icon className={cn("size-4", meta.tone)} />
       </MenuTrigger>
@@ -44,7 +47,7 @@ function StatusPicker({ task }: { task: Task }) {
             return (
               <MenuRadioItem key={status} value={status}>
                 <item.icon className={item.tone} />
-                {item.label}
+                {t(item.label)}
               </MenuRadioItem>
             );
           })}
@@ -55,6 +58,7 @@ function StatusPicker({ task }: { task: Task }) {
 }
 
 function TaskRow({ task }: { task: Task }) {
+  const { formatShortDate } = useFormat();
   const { openTask } = useWorkspaceUI();
   const isDone = task.status === "completed";
 
@@ -110,6 +114,7 @@ function ListGroup({
   tasks: Task[];
   defaults: Partial<CreateTaskInput>;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(status !== "completed");
   const meta = STATUS_META[status];
 
@@ -125,7 +130,7 @@ function ListGroup({
           className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-90")}
         />
         <meta.icon className={cn("size-4", meta.tone)} />
-        {meta.label}
+        {t(meta.label)}
         <span className="text-xs font-normal text-muted-foreground tabular-nums">{tasks.length}</span>
       </button>
       {open ? (

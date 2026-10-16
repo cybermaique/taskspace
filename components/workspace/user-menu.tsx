@@ -22,8 +22,10 @@ import {
   useWorkspaceUI,
 } from "@/components/workspace/workspace-provider";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 
 export function UserMenu({ compact = false }: { compact?: boolean }) {
+  const { t } = useI18n();
   const { profile, email, mode } = useWorkspace();
   const { signOut } = useWorkspaceActions();
   const { setSettingsOpen, setTrashOpen, setShortcutsOpen } = useWorkspaceUI();
@@ -36,7 +38,7 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
           "flex min-w-0 items-center gap-2.5 rounded-lg text-left outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring data-popup-open:bg-accent",
           compact ? "p-1" : "w-full p-2",
         )}
-        aria-label="Abrir menu da conta"
+        aria-label={t("Abrir menu da conta")}
       >
         <ProfileAvatar profile={profile} />
         {!compact ? (
@@ -53,33 +55,27 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
       </MenuTrigger>
       <MenuContent side={compact ? "bottom" : "top"} align={compact ? "end" : "start"} className="w-60">
         <MenuGroup>
-          <MenuLabel>Tema</MenuLabel>
+          <MenuLabel>{t("Tema")}</MenuLabel>
           <MenuRadioGroup value={theme ?? "system"} onValueChange={(value) => setTheme(String(value))}>
             {THEME_OPTIONS.map((option) => (
               <MenuRadioItem key={option.value} value={option.value}>
                 <option.icon />
-                {option.label}
+                {t(option.label)}
               </MenuRadioItem>
             ))}
           </MenuRadioGroup>
         </MenuGroup>
         <MenuSeparator />
         <MenuItem onClick={() => setSettingsOpen(true)}>
-          <Settings2 />
-          Preferências
-        </MenuItem>
+          <Settings2 />{t("Preferências")}</MenuItem>
         <MenuItem onClick={() => setTrashOpen(true)}>
-          <Trash2 />
-          Lixeira
-        </MenuItem>
+          <Trash2 />{t("Lixeira")}</MenuItem>
         <MenuItem onClick={() => setShortcutsOpen(true)}>
-          <Keyboard />
-          Atalhos de teclado
-        </MenuItem>
+          <Keyboard />{t("Atalhos de teclado")}</MenuItem>
         <MenuSeparator />
         <MenuItem destructive onClick={() => void signOut()}>
           <LogOut />
-          {mode === "demo" ? "Sair da demonstração" : "Sair"}
+          {mode === "demo" ? t("Sair da demonstração") : t("Sair")}
         </MenuItem>
       </MenuContent>
     </Menu>

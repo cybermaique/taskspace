@@ -34,7 +34,7 @@ import {
   useWorkspaceActions,
   useWorkspaceUI,
 } from "@/components/workspace/workspace-provider";
-import { formatDateTime } from "@/lib/format";
+
 import { getTypeMeta, PRIORITY_META, STATUS_META } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 import {
@@ -47,6 +47,8 @@ import {
   type Task,
   type TaskAttachment,
 } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 /* ── building blocks ───────────────────────────────────── */
 
@@ -93,6 +95,7 @@ function PropertySelect<Value extends string>({
   options: Array<{ value: Value; label: string; icon?: typeof Calendar; tone?: string }>;
   ariaLabel: string;
 }) {
+  const { t } = useI18n();
   const current = options.find((option) => option.value === value);
   return (
     <Select value={value} onValueChange={(next) => next && next !== value && onChange(next as Value)}>
@@ -101,13 +104,13 @@ function PropertySelect<Value extends string>({
         className="-ml-2 h-8 w-auto max-w-full gap-2 border-transparent bg-transparent px-2 font-medium shadow-none hover:bg-accent dark:bg-transparent dark:hover:bg-accent [&>svg:last-child]:opacity-0 hover:[&>svg:last-child]:opacity-100"
       >
         {current?.icon ? <current.icon className={cn("size-4", current.tone)} /> : null}
-        <span className="truncate">{current?.label ?? "—"}</span>
+        <span className="truncate">{current ? t(current.label) : "—"}</span>
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false} align="start">
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.icon ? <option.icon className={option.tone} /> : null}
-            {option.label}
+            {t(option.label)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -118,6 +121,7 @@ function PropertySelect<Value extends string>({
 /* ── editable pieces ───────────────────────────────────── */
 
 function EditableTitle({ task }: { task: Task }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const [value, setValue] = useState(task.title);
 
@@ -149,7 +153,7 @@ function EditableTitle({ task }: { task: Task }) {
       }}
       rows={1}
       maxLength={200}
-      aria-label="Título da tarefa"
+      aria-label={t("Título da tarefa")}
       className="field-sizing-content -mx-2 w-[calc(100%+1rem)] resize-none rounded-lg bg-transparent px-2 py-1 text-xl leading-snug font-semibold tracking-tight outline-none hover:bg-accent/50 focus-visible:bg-accent/50 sm:text-2xl"
     />
   );
@@ -162,6 +166,7 @@ function DescriptionEditor({
   task: Task;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.description ?? "");
@@ -187,21 +192,19 @@ function DescriptionEditor({
 
   return (
     <Section
-      title="Descrição"
+      title={t("Descrição")}
       action={
         <div className="flex items-center gap-1">
           {task.description_history.length ? (
-            <Tooltip content="Histórico da descrição">
-              <Button variant="ghost" size="icon-xs" onClick={() => setHistoryOpen(true)} aria-label="Histórico da descrição">
+            <Tooltip content={t("Histórico da descrição")}>
+              <Button variant="ghost" size="icon-xs" onClick={() => setHistoryOpen(true)} aria-label={t("Histórico da descrição")}>
                 <History />
               </Button>
             </Tooltip>
           ) : null}
           {!editing ? (
             <Button variant="ghost" size="xs" onClick={startEditing}>
-              <Pencil />
-              Editar
-            </Button>
+              <Pencil />{t("Editar")}</Button>
           ) : null}
         </div>
       }
@@ -215,20 +218,14 @@ function DescriptionEditor({
             onSubmit={() => void save()}
             onCancel={() => setEditing(false)}
             disabled={saving}
-            placeholder="Detalhes, links, blocos de código (digite /code ou /json)…"
+            placeholder={t("Detalhes, links, blocos de código (digite /code ou /json)…")}
             className="min-h-32"
           />
           <div className="flex items-center justify-end gap-2">
-            <span className="mr-auto hidden text-xs text-muted-foreground sm:inline">
-              Ctrl + Enter salva · Esc cancela
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
-              Cancelar
-            </Button>
+            <span className="mr-auto hidden text-xs text-muted-foreground sm:inline">{t("Ctrl + Enter salva · Esc cancela")}</span>
+            <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>{t("Cancelar")}</Button>
             <Button size="sm" onClick={() => void save()} disabled={saving || !dirty}>
-              {saving ? <LoaderCircle className="animate-spin" /> : null}
-              Salvar
-            </Button>
+              {saving ? <LoaderCircle className="animate-spin" /> : null}{t("Salvar")}</Button>
           </div>
         </div>
       ) : task.description ? (
@@ -240,9 +237,7 @@ function DescriptionEditor({
           type="button"
           onClick={startEditing}
           className="w-full rounded-lg border border-dashed px-3 py-4 text-left text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
-        >
-          Adicionar uma descrição…
-        </button>
+        >{t("Adicionar uma descrição…")}</button>
       )}
       <DescriptionHistoryDialog task={task} open={historyOpen} onOpenChange={setHistoryOpen} />
     </Section>
@@ -250,6 +245,7 @@ function DescriptionEditor({
 }
 
 function AttachmentsSection({ task }: { task: Task }) {
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TaskAttachment | null>(null);
@@ -265,7 +261,7 @@ function AttachmentsSection({ task }: { task: Task }) {
 
   return (
     <Section
-      title={`Anexos${attachments.length ? ` · ${attachments.length}` : ""}`}
+      title={`${t("Anexos")}${attachments.length ? ` · ${attachments.length}` : ""}`}
       action={uploading ? <LoaderCircle className="size-4 animate-spin text-muted-foreground" /> : null}
     >
       <FileDropZone onFiles={(files) => void upload(files)} disabled={uploading}>
@@ -291,9 +287,9 @@ function AttachmentsSection({ task }: { task: Task }) {
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title="Remover anexo?"
-        description={`"${pendingDelete?.file_name ?? ""}" será excluído permanentemente.`}
-        confirmLabel="Remover"
+        title={t("Remover anexo?")}
+        description={t("\"{name}\" será excluído permanentemente.", { name: pendingDelete?.file_name ?? "" })}
+        confirmLabel={t("Remover")}
         onConfirm={async () => {
           if (pendingDelete) await actions.deleteAttachment(task.id, pendingDelete.id);
         }}
@@ -313,6 +309,8 @@ function TaskSheetBody({
   onDirtyChange: (dirty: boolean) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
+  const { formatDateTime } = useFormat();
+  const { t, locale } = useI18n();
   const actions = useWorkspaceActions();
   const toast = useToast();
   const status = STATUS_META[task.status];
@@ -337,32 +335,30 @@ function TaskSheetBody({
       <div className="flex h-14 shrink-0 items-center gap-2 border-b pr-14 pl-4 sm:pl-6">
         <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", status.tone)}>
           <status.icon className="size-4" />
-          {status.label}
+          {t(status.label)}
         </span>
         <div className="ml-auto flex items-center gap-1">
-          <Tooltip content="Copiar link">
+          <Tooltip content={t("Copiar link")}>
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Copiar link da tarefa"
+              aria-label={t("Copiar link da tarefa")}
               onClick={() => {
                 const url = new URL(window.location.href);
                 url.searchParams.set("task", task.id);
-                void navigator.clipboard.writeText(url.toString()).then(() => toast.success("Link copiado"));
+                void navigator.clipboard.writeText(url.toString()).then(() => toast.success(t("Link copiado")));
               }}
             >
               <Link2 />
             </Button>
           </Tooltip>
           <Menu>
-            <MenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Mais ações" />}>
+            <MenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t("Mais ações")} />}>
               <Ellipsis />
             </MenuTrigger>
             <MenuContent align="end" className="w-44">
               <MenuItem destructive onClick={() => void actions.deleteTask(task.id)}>
-                <Trash2 />
-                Excluir tarefa
-              </MenuItem>
+                <Trash2 />{t("Excluir tarefa")}</MenuItem>
             </MenuContent>
           </Menu>
         </div>
@@ -371,29 +367,29 @@ function TaskSheetBody({
       <div ref={scrollRef} tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto px-4 pb-10 outline-none sm:px-6">
         <div className="pt-5">
           <DialogTitle className="sr-only">{task.title}</DialogTitle>
-          <DialogDescription className="sr-only">Detalhes da tarefa</DialogDescription>
+          <DialogDescription className="sr-only">{t("Detalhes da tarefa")}</DialogDescription>
           <EditableTitle task={task} />
 
           <dl className="mt-4 grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1">
-            <PropertyRow icon={CircleDashed} label="Status">
+            <PropertyRow icon={CircleDashed} label={t("Status")}>
               <PropertySelect
-                ariaLabel="Status"
+                ariaLabel={t("Status")}
                 value={task.status}
                 onChange={(next) => actions.moveTask(task.id, next, null)}
                 options={TASK_STATUSES.map((value) => ({ value, ...STATUS_META[value] }))}
               />
             </PropertyRow>
-            <PropertyRow icon={SignalHigh} label="Prioridade">
+            <PropertyRow icon={SignalHigh} label={t("Prioridade")}>
               <PropertySelect
-                ariaLabel="Prioridade"
+                ariaLabel={t("Prioridade")}
                 value={task.priority}
                 onChange={(priority) => void actions.updateTask(task.id, { priority })}
                 options={[...TASK_PRIORITIES].reverse().map((value) => ({ value, ...PRIORITY_META[value] }))}
               />
             </PropertyRow>
-            <PropertyRow icon={FolderClosed} label="Categoria">
+            <PropertyRow icon={FolderClosed} label={t("Categoria")}>
               <PropertySelect
-                ariaLabel="Categoria"
+                ariaLabel={t("Categoria")}
                 value={task.category ?? "trabalho"}
                 onChange={(category) =>
                   void actions.updateTask(task.id, { category, type: getDefaultTaskType(category) })
@@ -401,33 +397,32 @@ function TaskSheetBody({
                 options={TASK_CATEGORY_OPTIONS.map((option) => ({ ...option }))}
               />
             </PropertyRow>
-            <PropertyRow icon={Shapes} label="Tipo">
+            <PropertyRow icon={Shapes} label={t("Tipo")}>
               <PropertySelect
-                ariaLabel="Tipo"
+                ariaLabel={t("Tipo")}
                 value={task.type}
                 onChange={(type) => void actions.updateTask(task.id, { type })}
                 options={typeOptions}
               />
             </PropertyRow>
-            <PropertyRow icon={Calendar} label="Criada">
+            <PropertyRow icon={Calendar} label={t("Criada")}>
               <span className="text-muted-foreground">{formatDateTime(task.created_at)}</span>
             </PropertyRow>
             {task.completed_at ? (
-              <PropertyRow icon={CheckCheck} label="Concluída">
+              <PropertyRow icon={CheckCheck} label={t("Concluída")}>
                 <span className="text-muted-foreground">{formatDateTime(task.completed_at)}</span>
               </PropertyRow>
             ) : null}
           </dl>
           {task.category && !TASK_CATEGORY_OPTIONS.some((option) => option.value === task.category) ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Categoria atual: {getTaskCategoryLabel(task.category)}
+            <p className="mt-1 text-xs text-muted-foreground">{t("Categoria atual:")}{" "}{getTaskCategoryLabel(task.category, locale)}
             </p>
           ) : null}
         </div>
 
         <div className="mt-2">
           <DescriptionEditor task={task} onDirtyChange={onDirtyChange} />
-          <Section title="Subtarefas">
+          <Section title={t("Subtarefas")}>
             <TaskSubtasks task={task} />
           </Section>
           <AttachmentsSection task={task} />
@@ -441,6 +436,7 @@ function TaskSheetBody({
 }
 
 export function TaskSheet() {
+  const { t } = useI18n();
   const { tasks } = useWorkspace();
   const { activeTaskId, openTask } = useWorkspaceUI();
   const task = tasks.find((item) => item.id === activeTaskId) ?? null;
@@ -476,10 +472,10 @@ export function TaskSheet() {
       <ConfirmDialog
         open={confirmClose}
         onOpenChange={setConfirmClose}
-        title="Descartar alterações?"
-        description="A descrição tem alterações que ainda não foram salvas."
-        confirmLabel="Descartar"
-        cancelLabel="Continuar editando"
+        title={t("Descartar alterações?")}
+        description={t("A descrição tem alterações que ainda não foram salvas.")}
+        confirmLabel={t("Descartar")}
+        cancelLabel={t("Continuar editando")}
         onConfirm={close}
       />
     </>

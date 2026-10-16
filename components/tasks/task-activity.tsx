@@ -11,13 +11,16 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProfileAvatar } from "@/components/workspace/profile-avatar";
 import { useWorkspace, useWorkspaceActions } from "@/components/workspace/workspace-provider";
-import { formatDateTime, formatRelative } from "@/lib/format";
+
 import { STATUS_META } from "@/lib/task-meta";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/utils";
 import type { Task, TaskDescriptionHistory, TaskStatusHistory } from "@/types/task";
+import { useI18n } from "@/components/i18n-provider";
+import { useFormat } from "@/lib/use-format";
 
 function RelativeTime({ value }: { value: string }) {
+  const { formatDateTime, formatRelative } = useFormat();
   const hydrated = useHydrated();
   return (
     <time dateTime={value} title={formatDateTime(value)} className="text-xs text-muted-foreground">
@@ -27,6 +30,7 @@ function RelativeTime({ value }: { value: string }) {
 }
 
 function Comments({ task }: { task: Task }) {
+  const { t } = useI18n();
   const { profile } = useWorkspace();
   const actions = useWorkspaceActions();
   const [draft, setDraft] = useState("");
@@ -56,7 +60,7 @@ function Comments({ task }: { task: Task }) {
                     type="button"
                     onClick={() => void actions.deleteComment(task.id, comment.id)}
                     className="ml-auto inline-flex size-6 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover/comment:opacity-100 hover:text-destructive focus-visible:opacity-100 pointer-coarse:opacity-100"
-                    aria-label="Excluir comentário"
+                    aria-label={t("Excluir comentário")}
                   >
                     <Trash2 className="size-3.5" />
                   </button>
@@ -67,7 +71,7 @@ function Comments({ task }: { task: Task }) {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">Nenhum comentário ainda.</p>
+        <p className="text-sm text-muted-foreground">{t("Nenhum comentário ainda.")}</p>
       )}
 
       <div className="flex gap-3">
@@ -77,17 +81,15 @@ function Comments({ task }: { task: Task }) {
             value={draft}
             onValueChange={setDraft}
             onSubmit={() => void submit()}
-            placeholder="Escreva um comentário…"
+            placeholder={t("Escreva um comentário…")}
             rows={2}
             maxLength={4000}
             className="min-h-16"
           />
           <div className="mt-2 flex items-center justify-end gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:inline">Ctrl + Enter para enviar</span>
+            <span className="hidden text-xs text-muted-foreground sm:inline">{t("Ctrl + Enter para enviar")}</span>
             <Button size="sm" onClick={() => void submit()} disabled={!draft.trim() || sending}>
-              {sending ? <LoaderCircle className="animate-spin" /> : null}
-              Comentar
-            </Button>
+              {sending ? <LoaderCircle className="animate-spin" /> : null}{t("Comentar")}</Button>
           </div>
         </div>
       </div>
@@ -102,6 +104,7 @@ function getHistory(task: Task): TaskStatusHistory[] {
 }
 
 function History({ task }: { task: Task }) {
+  const { t } = useI18n();
   const history = [...getHistory(task)].reverse();
 
   return (
@@ -121,12 +124,12 @@ function History({ task }: { task: Task }) {
               <p className="flex flex-wrap items-center gap-1.5 text-sm">
                 {event.from_status ? (
                   <>
-                    <span className="text-muted-foreground">{STATUS_META[event.from_status].label}</span>
+                    <span className="text-muted-foreground">{t(STATUS_META[event.from_status].label)}</span>
                     <ArrowRight className="size-3.5 text-muted-foreground" />
-                    <span className="font-medium">{to.label}</span>
+                    <span className="font-medium">{t(to.label)}</span>
                   </>
                 ) : (
-                  <span className="font-medium">Tarefa criada</span>
+                  <span className="font-medium">{t("Tarefa criada")}</span>
                 )}
               </p>
               <RelativeTime value={event.changed_at} />
@@ -139,19 +142,20 @@ function History({ task }: { task: Task }) {
 }
 
 export function TaskActivity({ task }: { task: Task }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"comments" | "history">("comments");
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">Atividade</h3>
+        <h3 className="text-sm font-semibold">{t("Atividade")}</h3>
         <SegmentedControl
-          label="Atividade"
+          label={t("Atividade")}
           value={tab}
           onChange={setTab}
           options={[
-            { value: "comments", label: `Comentários${task.comments.length ? ` · ${task.comments.length}` : ""}` },
-            { value: "history", label: "Histórico" },
+            { value: "comments", label: `${t("Comentários")}${task.comments.length ? ` · ${task.comments.length}` : ""}` },
+            { value: "history", label: t("Histórico") },
           ]}
         />
       </div>
@@ -169,6 +173,8 @@ export function DescriptionHistoryDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { formatDateTime } = useFormat();
+  const { t } = useI18n();
   const actions = useWorkspaceActions();
   const [pending, setPending] = useState<TaskDescriptionHistory | null>(null);
 
@@ -176,7 +182,7 @@ export function DescriptionHistoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Histórico da descrição</DialogTitle>
+          <DialogTitle>{t("Histórico da descrição")}</DialogTitle>
           <DialogDescription>{task.title}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -186,14 +192,12 @@ export function DescriptionHistoryDialog({
                 <span className="text-xs font-medium text-muted-foreground">
                   {formatDateTime(revision.changed_at)}
                 </span>
-                <Button variant="outline" size="xs" onClick={() => setPending(revision)}>
-                  Restaurar
-                </Button>
+                <Button variant="outline" size="xs" onClick={() => setPending(revision)}>{t("Restaurar")}</Button>
               </div>
               {revision.description ? (
                 <RichText content={revision.description} className="text-sm" collapsibleCode />
               ) : (
-                <p className="text-sm text-muted-foreground italic">Sem descrição</p>
+                <p className="text-sm text-muted-foreground italic">{t("Sem descrição")}</p>
               )}
             </section>
           ))}
@@ -202,9 +206,9 @@ export function DescriptionHistoryDialog({
       <ConfirmDialog
         open={Boolean(pending)}
         onOpenChange={(next) => !next && setPending(null)}
-        title="Restaurar esta versão?"
-        description="A descrição atual será guardada no histórico."
-        confirmLabel="Restaurar"
+        title={t("Restaurar esta versão?")}
+        description={t("A descrição atual será guardada no histórico.")}
+        confirmLabel={t("Restaurar")}
         destructive={false}
         onConfirm={async () => {
           if (pending) await actions.restoreDescription(task.id, pending.id);

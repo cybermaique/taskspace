@@ -3,8 +3,10 @@ import "server-only";
 import { NextResponse } from "next/server";
 import type { z } from "zod";
 
-import { describeIssue } from "@/lib/api/schemas";
+import { describeIssue, validationErrorMap } from "@/lib/api/schemas";
 import { getCurrentUser } from "@/lib/auth";
+import { translate } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 export class HttpError extends Error {
   constructor(
@@ -35,7 +37,7 @@ export function withAuth<Args extends unknown[]>(
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
       const message = error instanceof Error && error.message ? error.message : fallbackMessage;
-      return NextResponse.json({ error: message }, { status });
+      return NextResponse.json({ error: translate(await getLocale(), message) }, { status });
     }
   };
 }
@@ -51,8 +53,9 @@ export async function parseJson<Schema extends z.ZodType>(
   } catch {
     badRequest("Corpo da requisição inválido.");
   }
-  const result = schema.safeParse(body);
-  if (!result.success) badRequest(describeIssue(result.error));
+  const locale = await getLocale();
+  const result = schema.safeParse(body, { error: validationErrorMap(locale) });
+  if (!result.success) badRequest(describeIssue(result.error, locale));
   return result.data;
 }
 

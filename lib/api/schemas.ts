@@ -1,13 +1,17 @@
 import { z } from "zod";
+import { DEFAULT_LOCALE, translate, type Locale } from "@/lib/i18n";
 
 import { PROFILE_ACCENTS } from "@/types/profile";
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TYPES } from "@/types/task";
 
-z.config(z.locales.pt());
+// Per-parse configuration avoids leaking one request's language into another.
+export const validationErrorMap = (locale: Locale) =>
+  (locale === "en" ? z.locales.en() : locale === "es" ? z.locales.es() : z.locales.pt()).localeError;
 
 const id = z.uuid();
 const required = (label: string, max: number) =>
-  z.string({ error: `Informe ${label}.` }).trim().min(1, `Informe ${label}.`).max(max);
+  z.string({ error: (issue) => issue.code === "invalid_type" ? `Informe ${label}.` : undefined })
+    .trim().min(1, `Informe ${label}.`).max(max);
 
 /* ── tasks ─────────────────────────────────────────────── */
 
@@ -76,9 +80,10 @@ export type UpdateTaskBody = z.infer<typeof updateTaskSchema>;
 export type UpdateProfileBody = z.infer<typeof updateProfileSchema>;
 
 /** First validation message, prefixed with the field when it is not obvious. */
-export function describeIssue(error: z.ZodError) {
+export function describeIssue(error: z.ZodError, locale: Locale = DEFAULT_LOCALE) {
   const issue = error.issues[0];
-  if (!issue) return "Dados inválidos.";
+  if (!issue) return translate(locale, "Dados inválidos.");
   const field = issue.path.join(".");
-  return issue.message.startsWith("Informe") || !field ? issue.message : `${field}: ${issue.message}`;
+  const message = translate(locale, issue.message);
+  return issue.message.startsWith("Informe") || !field ? message : `${field}: ${message}`;
 }
